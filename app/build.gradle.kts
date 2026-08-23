@@ -1,7 +1,7 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
-    id("com.google.devtools.ksp") version "1.9.0"
+    id("com.google.devtools.ksp")
 }
 
 android {
@@ -24,10 +24,6 @@ android {
                 arguments += listOf("-DANDROID_STL=c++_shared")
             }
         }
-
-        // ProGuard for release builds
-        isMinifyEnabled = false
-        isShrinkResources = false
     }
 
     buildTypes {
@@ -44,9 +40,9 @@ android {
             isMinifyEnabled = false
             isShrinkResources = false
         }
-        benchmark {
-            initWith(debug)
-            signingConfig = signingConfigs.debug
+        create("benchmark") {
+            initWith(getByName("debug"))
+            signingConfig = signingConfigs.getByName("debug")
             isDebuggable = false
         }
     }
@@ -83,10 +79,8 @@ android {
     }
 
     sourceSets {
-        main {
-            jniLibs {
-                srcDirs = listOf(file("src/main/jniLibs"))
-            }
+        getByName("main") {
+            jniLibs.srcDirs("src/main/jniLibs")
         }
     }
 }
@@ -133,9 +127,6 @@ dependencies {
 
     // Permission Handling
     implementation("com.karumi:dexter:6.2.3")
-
-    // OpenCV (Optional, for vision tasks)
-    // implementation("org.opencv:opencv-android:4.8.0")
 
     // Testing
     testImplementation("junit:junit:4.13.2")
