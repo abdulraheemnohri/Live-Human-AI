@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App name -->
+    <string name="app_name">Live Human AI</string>
+
+    <!-- General -->
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="save">Save</string>
+    <string name="delete">Delete</string>
+    <string name="edit">Edit</string>
+    <string name="back">Back</string>
+    <string name="next">Next</string>
+    <string name="done">Done</string>
+    <string name="loading">Loading...</string>
+
+    <!-- Home Screen -->
+    <string name="home_title">Live Human AI</string>
+    <string name="home_subtitle">See. Hear. Understand. Remember. Speak.</string>
+    <string name="home_ready">● READY</string>
+    <string name="home_help_text">How can I help?</string>
+
+    <!-- Chat Screen -->
+    <string name="chat_title">Live AI</string>
+    <string name="chat_placeholder">Ask about what you see...</string>
+    <string name="chat_send_hint">Send</string>
+
+    <!-- Vision Screen -->
+    <string name="vision_title">AI Vision</string>
+    <string name="vision_camera_preview">Camera Preview</string>
+    <string name="vision_start_camera">Start Camera</string>
+    <string name="vision_stop_camera">Stop Camera</string>
+
+    <!-- Model Manager Screen -->
+    <string name="models_title">Model Manager</string>
+    <string name="models_installed">Installed Models</string>
+    <string name="models_available">Available Models</string>
+    <string name="models_download">Download</string>
+    <string name="models_download_recommended">Download Recommended Models</string>
+    <string name="models_loading">Loading...</string>
+    <string name="models_loaded">Loaded</string>
+    <string name="models_not_loaded">Not Loaded</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_ai">AI Settings</string>
+    <string name="settings_voice">Voice Settings</string>
+    <string name="settings_vision">Vision Settings</string>
+    <string name="settings_memory">Memory Settings</string>
+    <string name="settings_network">Network Settings</string>
+    <string name="settings_about">About</string>
+    <string name="settings_performance_mode">Performance Mode</string>
+    <string name="settings_default_model">Default Model</string>
+    <string name="settings_temperature">Temperature</string>
+    <string name="settings_top_p">Top-p</string>
+    <string name="settings_max_tokens">Max Tokens</string>
+    <string name="settings_wake_word">Wake Word</string>
+    <string name="settings_microphone">Microphone</string>
+    <string name="settings_stt_model">STT Model</string>
+    <string name="settings_tts_model">TTS Model</string>
+    <string name="settings_voice">Voice</string>
+    <string name="settings_speech_speed">Speech Speed</string>
+    <string name="settings_speech_pitch">Speech Pitch</string>
+    <string name="settings_camera">Camera</string>
+    <string name="settings_object_detection">Object Detection</string>
+    <string name="settings_ocr">Text Recognition (OCR)</string>
+    <string name="settings_vision_model">Vision Model</string>
+    <string name="settings_memory_enabled">Memory</string>
+    <string name="settings_memory_retention">Memory Retention</string>
+    <string name="settings_network_enabled">Network Access</string>
+    <string name="settings_analytics">Analytics</string>
+
+    <!-- Performance Screen -->
+    <string name="performance_title">Performance Monitor</string>
+    <string name="performance_hardware">Hardware Metrics</string>
+    <string name="performance_ai">AI Performance</string>
+    <string name="performance_cpu_usage">CPU Usage</string>
+    <string name="performance_ram_usage">RAM Usage</string>
+    <string name="performance_gpu_usage">GPU Usage</string>
+    <string name="performance_temperature">Temperature</string>
+    <string name="performance_battery">Battery Level</string>
+    <string name="performance_fps">Vision FPS</string>
+    <string name="performance_tokens_per_second">Tokens/Second</string>
+    <string name="performance_stt_latency">STT Latency</string>
+    <string name="performance_tts_latency">TTS Latency</string>
+    <string name="performance_model_load_time">Model Load Time</string>
+    <string name="performance_thermal_state">Thermal State</string>
+    <string name="performance_advice">Performance Advice</string>
+
+    <!-- Diagnostics Screen -->
+    <string name="diagnostics_title">Diagnostics</string>
+    <string name="diagnostics_run_all">Run Full Diagnostic</string>
+    <string name="diagnostics_hardware_tests">Hardware Tests</string>
+    <string name="diagnostics_ai_tests">AI Tests</string>
+    <string name="diagnostics_camera">Camera</string>
+    <string name="diagnostics_microphone">Microphone</string>
+    <string name="diagnostics_speaker">Speaker</string>
+    <string name="diagnostics_storage">Storage</string>
+    <string name="diagnostics_ram">RAM</string>
+    <string name="diagnostics_gpu">GPU</string>
+    <string name="diagnostics_vulkan">Vulkan</string>
+    <string name="diagnostics_stt">STT (Speech-to-Text)</string>
+    <string name="diagnostics_llm">LLM (Language Model)</string>
+    <string name="diagnostics_tts">TTS (Text-to-Speech)</string>
+    <string name="diagnostics_vision">Vision</string>
+    <string name="diagnostics_model_integrity">Model Integrity</string>
+    <string name="diagnostics_test">Test</string>
+    <string name="diagnostics_all_passed">✓ All tests passed</string>
+    <string name="diagnostics_some_failed">✗ Some tests failed</string>
+
+    <!-- Privacy Screen -->
+    <string name="privacy_title">Privacy Center</string>
+    <string name="privacy_current_status">Current Status</string>
+    <string name="privacy_permission_controls">Permission Controls</string>
+    <string name="privacy_data_controls">Data Controls</string>
+    <string name="privacy_information">Privacy Information</string>
+    <string name="privacy_active">Active</string>
+    <string name="privacy_inactive">Inactive</string>
+    <string name="privacy_recording">Recording</string>
+    <string name="privacy_not_recording">Not Recording</string>
+    <string name="privacy_delete_conversations">Delete All Conversations</string>
+    <string name="privacy_delete_memories">Delete All Memories</string>
+    <string name="privacy_delete_models">Delete All Models</string>
+    <string name="privacy_info_1">• All AI processing happens locally on your device</string>
+    <string name="privacy_info_2">• No audio or video is sent to the cloud without your permission</string>
+    <string name="privacy_info_3">• Conversations and memories are stored locally and never shared</string>
+    <string name="privacy_info_4">• You can delete your data at any time</string>
+    <string name="privacy_info_5">• Model files are verified before loading to ensure integrity</string>
+
+    <!-- Memory Screen -->
+    <string name="memory_title">Memory</string>
+    <string name="memory_search_hint">Search memories...</string>
+    <string name="memory_important_only">Important Only</string>
+    <string name="memory_add_memory">Add Memory</string>
+
+    <!-- Camera Screen -->
+    <string name="camera_title">Camera</string>
+    <string name="camera_permission_required">Camera permission required</string>
+    <string name="camera_request_permission">Request Permission</string>
+    <string name="camera_flash_on">Flash On</string>
+    <string name="camera_flash_off">Flash Off</string>
+    <string name="camera_switch">Switch Camera</string>
+    <string name="camera_capture">Capture</string>
+    <string name="camera_start">Start Camera</string>
+    <string name="camera_stop">Stop Camera</string>
+    <string name="camera_objects">Objects</string>
+    <string name="camera_text">Text</string>
+    <string name="camera_scene">Scene</string>
+    <string name="camera_document">Document</string>
+
+    <!-- Performance Modes -->
+    <string name="performance_mode_battery_saver">Battery Saver</string>
+    <string name="performance_mode_balanced">Balanced</string>
+    <string name="performance_mode_performance">Performance</string>
+    <string name="performance_mode_maximum">Maximum</string>
+
+    <!-- Thermal States -->
+    <string name="thermal_state_normal">NORMAL</string>
+    <string name="thermal_state_warm">WARM</string>
+    <string name="thermal_state_hot">HOT</string>
+    <string name="thermal_state_critical">CRITICAL</string>
+
+    <!-- Messages -->
+    <string name="msg_model_not_loaded">Model not loaded</string>
+    <string name="msg_model_loaded">Model loaded successfully</string>
+    <string name="msg_model_downloaded">Model downloaded successfully</string>
+    <string name="msg_settings_saved">Settings saved successfully</string>
+    <string name="msg_permission_denied">Permission denied</string>
+    <string name="msg_insufficient_memory">Insufficient memory</string>
+    <string name="msg_insufficient_storage">Insufficient storage</string>
+    <string name="msg_device_not_supported">Device not supported</string>
+    <string name="msg_thermal_high">Device temperature is high. AI performance has been temporarily reduced.</string>
+    <string name="msg_battery_low">Battery is low. Consider connecting to a charger for optimal performance.</string>
+    <string name="msg_ram_high">RAM usage is high. Some models may be unloaded to free up memory.</string>
+
+    <!-- Errors -->
+    <string name="error_unknown">Unknown error</string>
+    <string name="error_initialization">Failed to initialize</string>
+    <string name="error_audio_recording">Failed to start audio recording</string>
+    <string name="error_camera_open">Failed to open camera</string>
+    <string name="error_model_load">Failed to load model</string>
+    <string name="error_network">Network error</string>
+    <string name="error_download">Download failed</string>
+
+    <!-- About -->
+    <string name="about_version">Version</string>
+    <string name="about_license">License</string>
+    <string name="about_source_code">Source Code</string>
+    <string name="about_github">View on GitHub</string>
+
+    <!-- Model Types -->
+    <string name="model_type_llm">LLM</string>
+    <string name="model_type_stt">STT</string>
+    <string name="model_type_tts">TTS</string>
+    <string name="model_type_vision">Vision</string>
+    <string name="model_type_embedding">Embedding</string>
+
+    <!-- Memory Types -->
+    <string name="memory_type_general">General</string>
+    <string name="memory_type_fact">Fact</string>
+    <string name="memory_type_preference">Preference</string>
+    <string name="memory_type_project">Project</string>
+    <string name="memory_type_conversation">Conversation</string>
+</resources>
