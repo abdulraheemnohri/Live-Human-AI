@@ -4,8 +4,8 @@
 
 # Gradle
 build/
-gradle/
 .gradle/
+!gradle/wrapper/gradle-wrapper.jar
 
 # Local history for Android Studio
 .localHistory/
