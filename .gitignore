@@ -1,0 +1,75 @@
+# Android Studio
+*.iml
+.idea/
+
+# Gradle
+build/
+gradle/
+.gradle/
+
+# Local history for Android Studio
+.localHistory/
+
+# Android NDK
+*.so
+*.a
+*.o
+*.obj
+
+# Android build outputs
+app/build/
+app/.externalNativeBuild/
+
+# CMake
+CMakeFiles/
+cmake-build/
+
+# Native libraries
+*.so
+*.dll
+*.dylib
+
+# Model files (to be downloaded separately)
+*.gguf
+*.bin
+*.safetensors
+
+# Logs
+*.log
+
+# Environment files
+.env
+.env.local
+
+# Keystore files
+*.jks
+*.keystore
+
+# IDE
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+temp/
+tmp/
+
+# Cache
+.cache/
+
+# Local properties
+local.properties
+
+# Test outputs
+/test/
+
+# Coverage reports
+coverage/
+
+# Emulator
+*.avd/
+*.ini
