@@ -25,11 +25,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    // TODO: Replace with actual navigation
-                    // For now, just show a placeholder
-                    // In a real implementation, this would use Jetpack Navigation
-                    // to navigate to different screens
-                    HomeScreen()
+                    com.livehumanai.livehumanai.ui.navigation.NavGraph()
                 }
             }
         }

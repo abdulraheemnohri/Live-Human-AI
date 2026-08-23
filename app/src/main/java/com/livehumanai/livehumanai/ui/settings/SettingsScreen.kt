@@ -37,6 +37,8 @@ import androidx.compose.ui.unit.dp
 fun SettingsScreen(
     onBack: () -> Unit = {}
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+
     // State for settings
     var performanceMode by remember { mutableStateOf("Balanced") }
     var enableWakeWord by remember { mutableStateOf(true) }
@@ -44,6 +46,13 @@ fun SettingsScreen(
     var enableCamera by remember { mutableStateOf(true) }
     var enableMicrophone by remember { mutableStateOf(true) }
     var enableNetwork by remember { mutableStateOf(false) }
+    var enableObjectDetection by remember { mutableStateOf(true) }
+    var enableOCR by remember { mutableStateOf(true) }
+
+    var selectedModel by remember { mutableStateOf("Qwen3 1.7B Q4") }
+    var showModelDialog by remember { mutableStateOf(false) }
+    var showRetentionDialog by remember { mutableStateOf(false) }
+    var retentionPeriod by remember { mutableStateOf("Indefinite") }
 
     Column(
         modifier = Modifier
@@ -150,10 +159,10 @@ fun SettingsScreen(
 
             // Default model
             SettingItem(
-                title = "Default Model",
+                title = "Default Model ($selectedModel)",
                 description = "Select the default AI model"
             ) {
-                Button(onClick = { /* TODO: Open model selection */ }) {
+                Button(onClick = { showModelDialog = true }) {
                     Text("Select Model")
                 }
             }
@@ -221,8 +230,8 @@ fun SettingsScreen(
                 description = "Enable object detection in camera"
             ) {
                 Switch(
-                    checked = true,
-                    onCheckedChange = { /* TODO: Toggle object detection */ }
+                    checked = enableObjectDetection,
+                    onCheckedChange = { enableObjectDetection = it }
                 )
             }
 
@@ -232,8 +241,8 @@ fun SettingsScreen(
                 description = "Enable text recognition in camera"
             ) {
                 Switch(
-                    checked = true,
-                    onCheckedChange = { /* TODO: Toggle OCR */ }
+                    checked = enableOCR,
+                    onCheckedChange = { enableOCR = it }
                 )
             }
         }
@@ -262,10 +271,10 @@ fun SettingsScreen(
 
             // Memory retention
             SettingItem(
-                title = "Memory Retention",
+                title = "Memory Retention ($retentionPeriod)",
                 description = "Set how long to keep memories"
             ) {
-                Button(onClick = { /* TODO: Open retention settings */ }) {
+                Button(onClick = { showRetentionDialog = true }) {
                     Text("Configure")
                 }
             }
@@ -319,10 +328,72 @@ fun SettingsScreen(
                 title = "Source Code",
                 description = "View on GitHub"
             ) {
-                Button(onClick = { /* TODO: Open GitHub */ }) {
+                Button(onClick = {
+                    val intent = android.content.Intent(
+                        android.content.Intent.ACTION_VIEW,
+                        android.net.Uri.parse("https://github.com/abdulraheemnohri/Live-Human-AI")
+                    )
+                    context.startActivity(intent)
+                }) {
                     Text("Open")
                 }
             }
+        }
+
+        // Model Dialog
+        if (showModelDialog) {
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { showModelDialog = false },
+                title = { Text("Select Default Model") },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf("Qwen3 0.6B Q4", "Qwen3 1.7B Q4", "Qwen3 4B Q4", "Whisper Base", "YOLO Nano").forEach { model ->
+                            Button(
+                                onClick = {
+                                    selectedModel = model
+                                    showModelDialog = false
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(model)
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    Button(onClick = { showModelDialog = false }) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+
+        // Retention Dialog
+        if (showRetentionDialog) {
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { showRetentionDialog = false },
+                title = { Text("Memory Retention") },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf("7 Days", "30 Days", "1 Year", "Indefinite").forEach { option ->
+                            Button(
+                                onClick = {
+                                    retentionPeriod = option
+                                    showRetentionDialog = false
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(option)
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    Button(onClick = { showRetentionDialog = false }) {
+                        Text("Cancel")
+                    }
+                }
+            )
         }
     }
 }

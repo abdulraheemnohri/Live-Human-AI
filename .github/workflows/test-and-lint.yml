@@ -28,6 +28,8 @@ jobs:
           cat << 'EOF' > /tmp/android/log.h
           #ifndef ANDROID_LOG_H
           #define ANDROID_LOG_H
+          #define ANDROID_LOG_UNKNOWN 0
+          #define ANDROID_LOG_DEFAULT 1
           #define ANDROID_LOG_VERBOSE 2
           #define ANDROID_LOG_DEBUG 3
           #define ANDROID_LOG_INFO 4
@@ -101,7 +103,8 @@ jobs:
       - name: Make Gradle Wrapper Executable
         run: chmod +x gradlew || gradle wrapper
 
-      - name: Run Android Unit Tests & Linting
-        run: |
-          ./gradlew test || gradle test || true
-          ./gradlew lint || gradle lint || true
+      - name: Run Android Unit Tests
+        run: ./gradlew test
+
+      - name: Run Android Lint Checks
+        run: ./gradlew lint

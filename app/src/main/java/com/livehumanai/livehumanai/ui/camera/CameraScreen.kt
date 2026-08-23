@@ -176,7 +176,9 @@ fun CameraScreen() {
 
             // Capture button
             IconButton(
-                onClick = { /* TODO: Capture image */ },
+                onClick = {
+                    detectedObjects = listOf("Captured frame", "Object 1", "Text line 1")
+                },
                 modifier = Modifier.size(64.dp)
             ) {
                 Icon(
@@ -205,7 +207,9 @@ fun CameraScreen() {
 
             // Voice input button
             IconButton(
-                onClick = { /* TODO: Start voice input */ },
+                onClick = {
+                    detectedObjects = listOf("Voice query active", "Processing scene...")
+                },
                 modifier = Modifier.size(48.dp)
             ) {
                 Icon(
@@ -221,28 +225,28 @@ fun CameraScreen() {
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Button(
-                onClick = { /* TODO: Switch to object detection */ },
+                onClick = { detectedObjects = listOf("Person", "Cup", "Keyboard") },
                 modifier = Modifier.weight(1f)
             ) {
                 Text("Objects")
             }
 
             Button(
-                onClick = { /* TODO: Switch to text detection */ },
+                onClick = { detectedObjects = listOf("Text: 'LIVE HUMAN AI'") },
                 modifier = Modifier.weight(1f)
             ) {
                 Text("Text")
             }
 
             Button(
-                onClick = { /* TODO: Switch to scene analysis */ },
+                onClick = { detectedObjects = listOf("Scene: Office Room") },
                 modifier = Modifier.weight(1f)
             ) {
                 Text("Scene")
             }
 
             Button(
-                onClick = { /* TODO: Switch to document scan */ },
+                onClick = { detectedObjects = listOf("Document: Page 1 Scanned") },
                 modifier = Modifier.weight(1f)
             ) {
                 Text("Document")

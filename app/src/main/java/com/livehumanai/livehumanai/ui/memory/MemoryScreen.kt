@@ -42,8 +42,13 @@ fun MemoryScreen() {
     var memories by remember { mutableStateOf(listOf<MemoryState>()) }
     var searchQuery by remember { mutableStateOf("") }
     var showImportantOnly by remember { mutableStateOf(false) }
+    var showAddDialog by remember { mutableStateOf(false) }
+    var editingMemory by remember { mutableStateOf<MemoryState?>(null) }
 
-    // Initialize with some sample data
+    var newTitle by remember { mutableStateOf("") }
+    var newContent by remember { mutableStateOf("") }
+
+    // Initialize with sample data
     if (memories.isEmpty()) {
         memories = listOf(
             MemoryState(
@@ -140,7 +145,11 @@ fun MemoryScreen() {
                         }
                     },
                     onEdit = { memoryId ->
-                        // TODO: Open edit dialog
+                        editingMemory = memories.find { it.id == memoryId }
+                        editingMemory?.let {
+                            newTitle = it.title
+                            newContent = it.content
+                        }
                     },
                     onDelete = { memoryId ->
                         memories = memories.filter { it.id != memoryId }
@@ -151,7 +160,11 @@ fun MemoryScreen() {
 
         // Add memory button
         Button(
-            onClick = { /* TODO: Open add memory dialog */ },
+            onClick = {
+                newTitle = ""
+                newContent = ""
+                showAddDialog = true
+            },
             modifier = Modifier.fillMaxWidth()
         ) {
             Icon(
@@ -160,6 +173,91 @@ fun MemoryScreen() {
             )
             Spacer(modifier = Modifier.weight(1f))
             Text("Add Memory")
+        }
+
+        // Add Dialog
+        if (showAddDialog) {
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { showAddDialog = false },
+                title = { Text("Add Memory") },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(
+                            value = newTitle,
+                            onValueChange = { newTitle = it },
+                            label = { Text("Title") }
+                        )
+                        OutlinedTextField(
+                            value = newContent,
+                            onValueChange = { newContent = it },
+                            label = { Text("Content") }
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            if (newTitle.isNotBlank() && newContent.isNotBlank()) {
+                                memories = memories + MemoryState(
+                                    id = System.currentTimeMillis(),
+                                    title = newTitle,
+                                    content = newContent,
+                                    type = "Fact",
+                                    isImportant = false,
+                                    createdAt = "Just now"
+                                )
+                            }
+                            showAddDialog = false
+                        }
+                    ) {
+                        Text("Save")
+                    }
+                },
+                dismissButton = {
+                    Button(onClick = { showAddDialog = false }) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+
+        // Edit Dialog
+        editingMemory?.let { mem ->
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { editingMemory = null },
+                title = { Text("Edit Memory") },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(
+                            value = newTitle,
+                            onValueChange = { newTitle = it },
+                            label = { Text("Title") }
+                        )
+                        OutlinedTextField(
+                            value = newContent,
+                            onValueChange = { newContent = it },
+                            label = { Text("Content") }
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            memories = memories.map {
+                                if (it.id == mem.id) it.copy(title = newTitle, content = newContent) else it
+                            }
+                            editingMemory = null
+                        }
+                    ) {
+                        Text("Save")
+                    }
+                },
+                dismissButton = {
+                    Button(onClick = { editingMemory = null }) {
+                        Text("Cancel")
+                    }
+                }
+            )
         }
     }
 }

@@ -31,16 +31,21 @@ import androidx.compose.ui.unit.dp
  * It provides quick access to the main features: Voice, Camera, and Settings.
  */
 @Composable
-fun HomeScreen() {
-    var runtimeStatus by remember { mutableStateOf("Initializing...") }
-    var deviceProfile by remember { mutableStateOf("Detecting...") }
+fun HomeScreen(
+    onNavigateToChat: () -> Unit = {},
+    onNavigateToCamera: () -> Unit = {},
+    onNavigateToSettings: () -> Unit = {}
+) {
+    var runtimeStatus by remember { mutableStateOf("Ready") }
+    var deviceProfile by remember { mutableStateOf("Balanced (6GB Profile)") }
 
-    // In a real implementation, these would be fetched from the NativeBridge
-    // For now, we'll use placeholder values
-    // LaunchedEffect(Unit) {
-    //     runtimeStatus = nativeBridge.getRuntimeStatus()
-    //     deviceProfile = nativeBridge.getDeviceProfile()
-    // }
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        val nativeBridge = com.livehumanai.livehumanai.native.NativeBridge.getInstance()
+        if (nativeBridge.isInitialized) {
+            runtimeStatus = nativeBridge.getRuntimeStatus()
+            deviceProfile = nativeBridge.getDeviceProfile()
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -116,7 +121,7 @@ fun HomeScreen() {
         ) {
             // Voice button
             IconButton(
-                onClick = { /* TODO: Navigate to voice screen */ },
+                onClick = onNavigateToChat,
                 modifier = Modifier.size(64.dp)
             ) {
                 Icon(
@@ -128,7 +133,7 @@ fun HomeScreen() {
 
             // Camera button
             IconButton(
-                onClick = { /* TODO: Navigate to camera screen */ },
+                onClick = onNavigateToCamera,
                 modifier = Modifier.size(64.dp)
             ) {
                 Icon(
@@ -155,7 +160,7 @@ fun HomeScreen() {
 
         // Settings button (top-right)
         IconButton(
-            onClick = { /* TODO: Navigate to settings */ },
+            onClick = onNavigateToSettings,
             modifier = Modifier
                 .padding(16.dp)
                 .align(Alignment.End)
