@@ -27,7 +27,11 @@ fun NavGraph() {
     ) {
         // Main screens
         composable(Screen.Home.route) {
-            HomeScreen()
+            HomeScreen(
+                onNavigateToChat = { navController.navigate(Screen.Chat.route) },
+                onNavigateToCamera = { navController.navigate(Screen.Vision.route) },
+                onNavigateToSettings = { navController.navigate(Screen.Settings.route) }
+            )
         }
 
         composable(Screen.Chat.route) {

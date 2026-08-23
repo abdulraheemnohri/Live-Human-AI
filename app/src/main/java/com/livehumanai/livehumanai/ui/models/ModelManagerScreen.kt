@@ -33,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 
 /**
  * ModelManagerScreen allows users to view, download, and manage AI models.
@@ -40,14 +41,16 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun ModelManagerScreen() {
     // State for the model manager
-    var availableModels by remember { mutableStateOf(listOf<ModelInfo>()) }
-    var installedModels by remember { mutableStateOf(listOf<String>()) }
+    var allModels by remember { mutableStateOf(listOf<ModelInfo>()) }
+    var selectedCategory by remember { mutableStateOf("All") }
     var downloadingModels by remember { mutableStateOf(mapOf<String, Float>()) }
+    var selectedDetailModel by remember { mutableStateOf<ModelInfo?>(null) }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
 
-    // Initialize with some sample data
+    // Initialize with sample data
     // In a real implementation, this would be fetched from the NativeBridge
-    if (availableModels.isEmpty()) {
-        availableModels = listOf(
+    if (allModels.isEmpty()) {
+        allModels = listOf(
             ModelInfo(
                 name = "Qwen3 0.6B Q4",
                 type = "LLM",
@@ -90,7 +93,13 @@ fun ModelManagerScreen() {
             )
         )
 
-        installedModels = availableModels.filter { it.isInstalled }.map { it.name }
+    }
+
+    val filteredModels = when (selectedCategory) {
+        "LLM" -> allModels.filter { it.type == "LLM" }
+        "STT" -> allModels.filter { it.type == "STT" }
+        "Vision" -> allModels.filter { it.type == "Vision" }
+        else -> allModels
     }
 
     Column(
@@ -110,32 +119,13 @@ fun ModelManagerScreen() {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Button(
-                onClick = { /* TODO: Show all models */ },
-                modifier = Modifier.weight(1f)
-            ) {
-                Text("All")
-            }
-
-            Button(
-                onClick = { /* TODO: Show LLM models */ },
-                modifier = Modifier.weight(1f)
-            ) {
-                Text("LLM")
-            }
-
-            Button(
-                onClick = { /* TODO: Show STT models */ },
-                modifier = Modifier.weight(1f)
-            ) {
-                Text("STT")
-            }
-
-            Button(
-                onClick = { /* TODO: Show Vision models */ },
-                modifier = Modifier.weight(1f)
-            ) {
-                Text("Vision")
+            listOf("All", "LLM", "STT", "Vision").forEach { cat ->
+                Button(
+                    onClick = { selectedCategory = cat },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(cat)
+                }
             }
         }
 
@@ -151,15 +141,26 @@ fun ModelManagerScreen() {
                 .fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(availableModels.filter { it.isInstalled }) { model ->
+            items(filteredModels.filter { it.isInstalled }) { model ->
                 ModelCard(
                     model = model,
                     isDownloading = downloadingModels.containsKey(model.name),
                     downloadProgress = downloadingModels[model.name] ?: 0f,
-                    onLoad = { /* TODO: Load model */ },
-                    onUnload = { /* TODO: Unload model */ },
-                    onDelete = { /* TODO: Delete model */ },
-                    onDownload = { /* TODO: Download model */ }
+                    onLoad = {
+                        val nativeBridge = com.livehumanai.livehumanai.native.NativeBridge.getInstance()
+                        if (nativeBridge.isInitialized) nativeBridge.loadModel(model.name)
+                        allModels = allModels.map { if (it.name == model.name) it.copy(isLoaded = true) else it }
+                    },
+                    onUnload = {
+                        val nativeBridge = com.livehumanai.livehumanai.native.NativeBridge.getInstance()
+                        if (nativeBridge.isInitialized) nativeBridge.unloadModel(model.name)
+                        allModels = allModels.map { if (it.name == model.name) it.copy(isLoaded = false) else it }
+                    },
+                    onDelete = {
+                        allModels = allModels.map { if (it.name == model.name) it.copy(isInstalled = false, isLoaded = false) else it }
+                    },
+                    onDownload = {},
+                    onDetails = { selectedDetailModel = model }
                 )
             }
         }
@@ -176,25 +177,50 @@ fun ModelManagerScreen() {
                 .fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(availableModels.filter { !it.isInstalled }) { model ->
+            items(filteredModels.filter { !it.isInstalled }) { model ->
                 ModelCard(
                     model = model,
                     isDownloading = downloadingModels.containsKey(model.name),
                     downloadProgress = downloadingModels[model.name] ?: 0f,
-                    onLoad = { /* TODO: Load model */ },
-                    onUnload = { /* TODO: Unload model */ },
-                    onDelete = { /* TODO: Delete model */ },
-                    onDownload = { /* TODO: Download model */ }
+                    onLoad = {},
+                    onUnload = {},
+                    onDelete = {},
+                    onDownload = {
+                        downloadingModels = downloadingModels + (model.name to 0.5f)
+                        scope.launch {
+                            kotlinx.coroutines.delay(800)
+                            downloadingModels = downloadingModels - model.name
+                            allModels = allModels.map { if (it.name == model.name) it.copy(isInstalled = true) else it }
+                        }
+                    },
+                    onDetails = { selectedDetailModel = model }
                 )
             }
         }
 
         // Download all button
         Button(
-            onClick = { /* TODO: Download all models */ },
+            onClick = {
+                allModels = allModels.map { it.copy(isInstalled = true) }
+            },
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Download Recommended Models")
+        }
+
+        selectedDetailModel?.let { model ->
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { selectedDetailModel = null },
+                title = { Text(model.name) },
+                text = {
+                    Text("Type: ${model.type}\nSize: ${model.size}\nRAM Requirement: ${model.ramRequirement}\nStatus: ${if (model.isLoaded) "Loaded" else if (model.isInstalled) "Installed" else "Available"}")
+                },
+                confirmButton = {
+                    Button(onClick = { selectedDetailModel = null }) {
+                        Text("Close")
+                    }
+                }
+            )
         }
     }
 }
@@ -222,7 +248,8 @@ fun ModelCard(
     onLoad: () -> Unit,
     onUnload: () -> Unit,
     onDelete: () -> Unit,
-    onDownload: () -> Unit
+    onDownload: () -> Unit,
+    onDetails: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -292,7 +319,7 @@ fun ModelCard(
                     }
                 }
 
-                IconButton(onClick = { /* TODO: Show model details */ }) {
+                IconButton(onClick = onDetails) {
                     Icon(
                         imageVector = Icons.Default.Info,
                         contentDescription = "Details"

@@ -1,0 +1,110 @@
+name: Test and Find Errors
+
+on:
+  push:
+    branches: [ main, master, "jules-*" ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  test-and-lint:
+    name: Test Code and Find Bugs
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Run C++ Native Runtime Unit Tests
+        run: |
+          mkdir -p /tmp/android
+          cat << 'EOF' > /tmp/android/log.h
+          #ifndef ANDROID_LOG_H
+          #define ANDROID_LOG_H
+          #define ANDROID_LOG_UNKNOWN 0
+          #define ANDROID_LOG_DEFAULT 1
+          #define ANDROID_LOG_VERBOSE 2
+          #define ANDROID_LOG_DEBUG 3
+          #define ANDROID_LOG_INFO 4
+          #define ANDROID_LOG_WARN 5
+          #define ANDROID_LOG_ERROR 6
+          #define ANDROID_LOG_FATAL 7
+          #define __android_log_print(prio, tag, ...) ((void)0)
+          #endif
+          EOF
+
+          cat << 'EOF' > /tmp/test_native.cpp
+          #include <iostream>
+          #include <cassert>
+          #include <memory>
+          #include <thread>
+          #include <chrono>
+          #include "NativeEngine.h"
+          #include "ModelRouter.h"
+          #include "TaskScheduler.h"
+          #include "HardwareProfiler.h"
+
+          int main() {
+              std::cout << "Starting Native AI Runtime unit tests..." << std::endl;
+
+              NativeEngine engine;
+              assert(engine.initialize() && "NativeEngine failed to initialize");
+              std::string runtimeStatus = engine.getRuntimeStatus();
+              assert(!runtimeStatus.empty() && "Runtime status should not be empty");
+              std::cout << "[PASS] NativeEngine initialization & runtime status: " << runtimeStatus << std::endl;
+
+              HardwareProfiler profiler;
+              profiler.initialize();
+              HardwareProfiler::DeviceProfile profile = profiler.getDeviceProfile();
+              std::cout << "[PASS] HardwareProfiler profile detected: " << static_cast<int>(profile) << std::endl;
+
+              ModelRouter router;
+              router.initialize();
+              router.setDeviceProfile(ModelRouter::DeviceProfile::MID_RANGE);
+              std::string lowRamModel = router.selectModel("text");
+              assert(!lowRamModel.empty() && "MID_RANGE device should select a valid model");
+              std::cout << "[PASS] ModelRouter selected model for MID_RANGE: " << lowRamModel << std::endl;
+
+              router.setDeviceProfile(ModelRouter::DeviceProfile::FLAGSHIP);
+              std::string highRamModel = router.selectModel("text");
+              assert(!highRamModel.empty() && "FLAGSHIP device should select a valid model");
+              std::cout << "[PASS] ModelRouter selected model for FLAGSHIP: " << highRamModel << std::endl;
+
+              TaskScheduler scheduler;
+              scheduler.initialize();
+              bool taskExecuted = false;
+              int taskId = scheduler.scheduleTask("test_task", TaskScheduler::Priority::HIGH, [&taskExecuted]() {
+                  taskExecuted = true;
+              });
+
+              std::this_thread::sleep_for(std::chrono::milliseconds(200));
+              assert(taskExecuted && "TaskScheduler should execute scheduled task");
+              std::cout << "[PASS] TaskScheduler executed scheduled task ID: " << taskId << std::endl;
+
+              scheduler.shutdown();
+              engine.shutdown();
+              router.shutdown();
+
+              std::cout << "All Native AI Runtime unit tests passed successfully!" << std::endl;
+              return 0;
+          }
+          EOF
+
+          g++ -std=c++17 -I /tmp -I app/src/main/cpp -I app/src/main/cpp/core -I app/src/main/cpp/ai -I app/src/main/cpp/ai/llm -I app/src/main/cpp/ai/stt -I app/src/main/cpp/ai/tts -I app/src/main/cpp/ai/vision -I app/src/main/cpp/audio -I app/src/main/cpp/memory -I app/src/main/cpp/hardware -I app/src/main/cpp/scheduler -I app/src/main/cpp/security -I app/src/main/cpp/jni -I app/src/main/cpp/utils /tmp/test_native.cpp app/src/main/cpp/core/NativeCore.cpp app/src/main/cpp/core/NativeEngine.cpp app/src/main/cpp/ai/AIEngine.cpp app/src/main/cpp/ai/ModelRouter.cpp app/src/main/cpp/ai/llm/LLMManager.cpp app/src/main/cpp/ai/stt/STTManager.cpp app/src/main/cpp/ai/tts/TTSManager.cpp app/src/main/cpp/ai/vision/VisionManager.cpp app/src/main/cpp/hardware/HardwareProfiler.cpp app/src/main/cpp/hardware/ThermalMonitor.cpp app/src/main/cpp/hardware/BatteryMonitor.cpp app/src/main/cpp/scheduler/TaskScheduler.cpp app/src/main/cpp/utils/Logger.cpp -o /tmp/test_native_runner -lpthread
+          /tmp/test_native_runner
+
+      - name: Make Gradle Wrapper Executable
+        run: chmod +x gradlew || gradle wrapper
+
+      - name: Run Android Unit Tests
+        run: ./gradlew test
+
+      - name: Run Android Lint Checks
+        run: ./gradlew lint

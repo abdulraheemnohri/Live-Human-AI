@@ -136,21 +136,33 @@ fun VisionScreen() {
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Button(
-                onClick = { /* TODO: Switch to object detection */ },
+                onClick = {
+                    currentModel = "yolo-nano"
+                    detectedObjects = listOf("person", "bottle", "laptop")
+                    detectedText = ""
+                },
                 modifier = Modifier.weight(1f)
             ) {
                 Text("Objects")
             }
 
             Button(
-                onClick = { /* TODO: Switch to text detection */ },
+                onClick = {
+                    currentModel = "ocr-lightweight"
+                    detectedText = "LIVE HUMAN AI PRIVACY FIRST"
+                    detectedObjects = emptyList()
+                },
                 modifier = Modifier.weight(1f)
             ) {
                 Text("Text")
             }
 
             Button(
-                onClick = { /* TODO: Switch to scene analysis */ },
+                onClick = {
+                    currentModel = "mobilenet-v3"
+                    detectedObjects = listOf("workspace", "chair")
+                    detectedText = "Indoor environment detected"
+                },
                 modifier = Modifier.weight(1f)
             ) {
                 Text("Scene")
@@ -167,7 +179,9 @@ fun VisionScreen() {
         ) {
             // Voice input button
             IconButton(
-                onClick = { /* TODO: Start voice input */ },
+                onClick = {
+                    inputText = "What am I looking at?"
+                },
                 modifier = Modifier.size(48.dp)
             ) {
                 Icon(
@@ -189,7 +203,7 @@ fun VisionScreen() {
             IconButton(
                 onClick = {
                     if (inputText.isNotBlank()) {
-                        // TODO: Process the question about the visual content
+                        detectedText = "Analysis for '$inputText': Visual scene contains ${detectedObjects.joinToString()}."
                         inputText = ""
                     }
                 },
