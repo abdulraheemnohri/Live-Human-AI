@@ -27,11 +27,26 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun PerformanceScreen() {
     // State for performance metrics
-    var cpuUsage by remember { mutableStateOf(32f) }
-    var ramUsage by remember { mutableStateOf(48f) }
+    var cpuUsage by remember { mutableStateOf(15f) }
+    var ramUsage by remember { mutableStateOf(35f) }
     var gpuUsage by remember { mutableStateOf(0f) }
-    var temperature by remember { mutableStateOf(35f) }
-    var batteryLevel by remember { mutableStateOf(85f) }
+    var temperature by remember { mutableStateOf(32f) }
+    var batteryLevel by remember { mutableStateOf(90f) }
+
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        val nativeBridge = com.livehumanai.livehumanai.native.NativeBridge.getInstance()
+        if (nativeBridge.isInitialized) {
+            val cpu = nativeBridge.getCPUUsage()
+            val ramPct = nativeBridge.getRAMUsagePercentage()
+            val temp = nativeBridge.getTemperature()
+            val batt = nativeBridge.getBatteryLevel()
+
+            if (cpu > 0f) cpuUsage = cpu
+            if (ramPct > 0f) ramUsage = ramPct
+            if (temp > 0f) temperature = temp
+            if (batt > 0f) batteryLevel = batt
+        }
+    }
     var fps by remember { mutableStateOf(15f) }
     var tokensPerSecond by remember { mutableStateOf(10f) }
     var sttLatency by remember { mutableStateOf(120f) }
