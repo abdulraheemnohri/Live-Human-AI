@@ -215,15 +215,77 @@ void AIEngine::setContext(const std::string& context, const std::string& modelNa
     }
 }
 
+static AIEngine::ModelInfo convertLLMInfo(const LLMManager::ModelInfo& info) {
+    AIEngine::ModelInfo res;
+    res.name = info.name;
+    res.version = info.version;
+    res.size = info.size;
+    res.format = info.format;
+    res.quantization = info.quantization;
+    res.ramRequirement = info.ramRequirement;
+    res.supportedLanguages = info.supportedLanguages;
+    res.supportsVision = info.supportsVision;
+    res.supportsAudio = info.supportsAudio;
+    res.license = info.license;
+    res.source = info.source;
+    res.checksum = info.checksum;
+    res.isInstalled = info.isInstalled;
+    return res;
+}
+
+static AIEngine::ModelInfo convertSTTInfo(const STTManager::ModelInfo& info) {
+    AIEngine::ModelInfo res;
+    res.name = info.name;
+    res.version = info.version;
+    res.size = info.size;
+    res.format = info.format;
+    res.supportedLanguages = info.supportedLanguages;
+    res.supportsAudio = true;
+    res.license = info.license;
+    res.source = info.source;
+    res.checksum = info.checksum;
+    res.isInstalled = info.isInstalled;
+    return res;
+}
+
+static AIEngine::ModelInfo convertTTSInfo(const TTSManager::ModelInfo& info) {
+    AIEngine::ModelInfo res;
+    res.name = info.name;
+    res.version = info.version;
+    res.size = info.size;
+    res.format = info.format;
+    res.supportedLanguages = info.supportedLanguages;
+    res.supportsAudio = true;
+    res.license = info.license;
+    res.source = info.source;
+    res.checksum = info.checksum;
+    res.isInstalled = info.isInstalled;
+    return res;
+}
+
+static AIEngine::ModelInfo convertVisionInfo(const VisionManager::ModelInfo& info) {
+    AIEngine::ModelInfo res;
+    res.name = info.name;
+    res.version = info.version;
+    res.size = info.size;
+    res.format = info.format;
+    res.supportsVision = true;
+    res.license = info.license;
+    res.source = info.source;
+    res.checksum = info.checksum;
+    res.isInstalled = info.isInstalled;
+    return res;
+}
+
 AIEngine::ModelInfo AIEngine::getModelInfo(const std::string& modelName) const {
     if (m_modelRouter->isLLMModel(modelName)) {
-        return m_llmManager->getModelInfo(modelName);
+        return convertLLMInfo(m_llmManager->getModelInfo(modelName));
     } else if (m_modelRouter->isSTTModel(modelName)) {
-        return m_sttManager->getModelInfo(modelName);
+        return convertSTTInfo(m_sttManager->getModelInfo(modelName));
     } else if (m_modelRouter->isTTSModel(modelName)) {
-        return m_ttsManager->getModelInfo(modelName);
+        return convertTTSInfo(m_ttsManager->getModelInfo(modelName));
     } else if (m_modelRouter->isVisionModel(modelName)) {
-        return m_visionManager->getModelInfo(modelName);
+        return convertVisionInfo(m_visionManager->getModelInfo(modelName));
     }
 
     return ModelInfo{};
@@ -232,17 +294,18 @@ AIEngine::ModelInfo AIEngine::getModelInfo(const std::string& modelName) const {
 std::vector<AIEngine::ModelInfo> AIEngine::getAvailableModels() const {
     std::vector<ModelInfo> models;
 
-    auto llmModels = m_llmManager->getAvailableModels();
-    models.insert(models.end(), llmModels.begin(), llmModels.end());
-
-    auto sttModels = m_sttManager->getAvailableModels();
-    models.insert(models.end(), sttModels.begin(), sttModels.end());
-
-    auto ttsModels = m_ttsManager->getAvailableModels();
-    models.insert(models.end(), ttsModels.begin(), ttsModels.end());
-
-    auto visionModels = m_visionManager->getAvailableModels();
-    models.insert(models.end(), visionModels.begin(), visionModels.end());
+    for (const auto& m : m_llmManager->getAvailableModels()) {
+        models.push_back(convertLLMInfo(m));
+    }
+    for (const auto& m : m_sttManager->getAvailableModels()) {
+        models.push_back(convertSTTInfo(m));
+    }
+    for (const auto& m : m_ttsManager->getAvailableModels()) {
+        models.push_back(convertTTSInfo(m));
+    }
+    for (const auto& m : m_visionManager->getAvailableModels()) {
+        models.push_back(convertVisionInfo(m));
+    }
 
     return models;
 }

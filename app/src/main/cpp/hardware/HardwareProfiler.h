@@ -49,6 +49,10 @@ public:
     DeviceProfile getDeviceProfile() const;
 
 private:
+    bool checkNEONSupport() const;
+    bool checkVulkanSupport() const;
+    bool checkOpenGLESSupport() const;
+
     // Internal state
     size_t m_totalRAM;
     size_t m_availableRAM;

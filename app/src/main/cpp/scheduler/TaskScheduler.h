@@ -7,7 +7,7 @@
 #include <mutex>
 #include <thread>
 #include <condition_variable>
-#include <queue>
+#include <deque>
 #include <functional>
 
 // TaskScheduler manages the execution of AI tasks
@@ -75,8 +75,8 @@ public:
 
 private:
     std::vector<std::thread> m_threads;
-    std::queue<Task> m_taskQueue;
-    std::mutex m_mutex;
+    std::deque<Task> m_taskQueue;
+    mutable std::mutex m_mutex;
     std::condition_variable m_conditionVariable;
     bool m_running;
     bool m_paused;
