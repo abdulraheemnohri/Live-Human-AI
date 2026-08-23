@@ -1,4 +1,7 @@
 #include "STTManager.h"
+#include <algorithm>
+#include <thread>
+#include <chrono>
 
 STTManager::STTManager()
     : m_defaultSampleRate(16000),

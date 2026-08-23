@@ -161,7 +161,7 @@ void TaskScheduler::workerThread() {
             }
 
             task = m_taskQueue.front();
-            m_taskQueue.pop();
+            m_taskQueue.pop_front();
             task.status = Status::RUNNING;
         }
 

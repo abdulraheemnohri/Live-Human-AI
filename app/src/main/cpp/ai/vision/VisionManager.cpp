@@ -1,4 +1,5 @@
 #include "VisionManager.h"
+#include <algorithm>
 
 VisionManager::VisionManager() {
     initializeAvailableModels();
@@ -160,8 +161,9 @@ cv::Mat VisionManager::preprocessImage(const cv::Mat& image) {
     // 2. Resize to model input size
     // 3. Normalize pixel values
 
-    cv::Mat processedImage;
+    cv::Mat processedImage = image;
 
+#ifdef HAVE_OPENCV
     // Convert to RGB if image is in BGR format
     if (image.channels() == 3) {
         cv::cvtColor(image, processedImage, cv::COLOR_BGR2RGB);
@@ -174,6 +176,7 @@ cv::Mat VisionManager::preprocessImage(const cv::Mat& image) {
 
     // Normalize to [0, 1] range
     processedImage.convertTo(processedImage, CV_32F, 1.0 / 255.0);
+#endif
 
     return processedImage;
 }

@@ -3,10 +3,24 @@
 
 #include <string>
 #include <vector>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <functional>
+
+#ifdef HAVE_OPENCV
 #include <opencv2/core.hpp>
+#else
+namespace cv {
+    class Mat {
+    public:
+        Mat() : rows(0), cols(0) {}
+        int rows;
+        int cols;
+        bool empty() const { return rows == 0 || cols == 0; }
+    };
+}
+#endif
 
 // VisionManager handles computer vision operations
 class VisionManager {
@@ -74,7 +88,7 @@ private:
         void* context; // Opaque pointer to the model context
     };
 
-    std::mutex m_mutex;
+    mutable std::mutex m_mutex;
     std::vector<std::string> m_loadedModels;
     std::map<std::string, ModelState> m_modelStates;
     std::vector<ModelInfo> m_availableModels;

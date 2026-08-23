@@ -1,5 +1,8 @@
 #include "LLMManager.h"
 #include "../../utils/Logger.h"
+#include <algorithm>
+#include <thread>
+#include <chrono>
 
 LLMManager::LLMManager()
     : m_defaultTemperature(0.7f),

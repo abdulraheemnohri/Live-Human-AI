@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <functional>
@@ -84,7 +85,7 @@ private:
         float pitch;
     };
 
-    std::mutex m_mutex;
+    mutable std::mutex m_mutex;
     std::vector<std::string> m_loadedModels;
     std::map<std::string, ModelState> m_modelStates;
     std::vector<ModelInfo> m_availableModels;

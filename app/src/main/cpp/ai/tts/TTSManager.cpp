@@ -1,4 +1,7 @@
 #include "TTSManager.h"
+#include <algorithm>
+#include <thread>
+#include <chrono>
 
 TTSManager::TTSManager()
     : m_defaultVoice("default"),
