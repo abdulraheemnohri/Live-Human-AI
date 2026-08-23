@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data-extraction-rules xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Allow backup of shared preferences -->
+    <cloud-backup>
+        <include domain="sharedpref" path="." />
+    </cloud-backup>
+
+    <!-- Exclude sensitive files from backup -->
+    <exclude domain="file" path="models/" />
+    <exclude domain="file" path="cache/" />
+    <exclude domain="file" path="databases/" />
+</data-extraction-rules>
