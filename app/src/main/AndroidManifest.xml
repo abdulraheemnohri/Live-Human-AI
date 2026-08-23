@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.livehumanai.livehumanai">
+
+    <!-- Application metadata -->
+    <application
+        android:name=".LiveHumanAIApp"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.LiveHumanAI"
+        android:usesCleartextTraffic="false"
+        tools:targetApi="31">
+
+        <!-- Main Activity -->
+        <activity
+            android:name=".ui.MainActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.LiveHumanAI"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Camera Activity -->
+        <activity
+            android:name=".ui.camera.CameraActivity"
+            android:exported="false"
+            android:theme="@style/Theme.LiveHumanAI" />
+
+        <!-- Chat Activity -->
+        <activity
+            android:name=".ui.chat.ChatActivity"
+            android:exported="false"
+            android:theme="@style/Theme.LiveHumanAI" />
+
+        <!-- Vision Activity -->
+        <activity
+            android:name=".ui.vision.VisionActivity"
+            android:exported="false"
+            android:theme="@style/Theme.LiveHumanAI" />
+
+        <!-- Model Manager Activity -->
+        <activity
+            android:name=".ui.models.ModelManagerActivity"
+            android:exported="false"
+            android:theme="@style/Theme.LiveHumanAI" />
+
+        <!-- Memory Activity -->
+        <activity
+            android:name=".ui.memory.MemoryActivity"
+            android:exported="false"
+            android:theme="@style/Theme.LiveHumanAI" />
+
+        <!-- Settings Activity -->
+        <activity
+            android:name=".ui.settings.SettingsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.LiveHumanAI" />
+
+        <!-- Performance Monitor Activity -->
+        <activity
+            android:name=".ui.performance.PerformanceActivity"
+            android:exported="false"
+            android:theme="@style/Theme.LiveHumanAI" />
+
+        <!-- Privacy Center Activity -->
+        <activity
+            android:name=".ui.privacy.PrivacyActivity"
+            android:exported="false"
+            android:theme="@style/Theme.LiveHumanAI" />
+
+        <!-- Diagnostics Activity -->
+        <activity
+            android:name=".ui.diagnostics.DiagnosticsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.LiveHumanAI" />
+
+        <!-- Foreground Service for AI Processing -->
+        <service
+            android:name=".service.AIProcessingService"
+            android:exported="false"
+            android:foregroundServiceType="dataProcessing|camera|microphone" />
+
+        <!-- Broadcast Receiver for Wake Word -->
+        <receiver
+            android:name=".receiver.WakeWordReceiver"
+            android:exported="false" />
+
+        <!-- Providers -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+    </application>
+
+    <!-- Required Permissions -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <!-- Optional Permissions (Requested at Runtime) -->
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <uses-permission android:name="android.permission.SEND_SMS" />
+    <uses-permission android:name="android.permission.READ_SMS" />
+
+    <!-- Hardware Features -->
+    <uses-feature android:name="android.hardware.camera" />
+    <uses-feature android:name="android.hardware.camera.autofocus" />
+    <uses-feature android:name="android.hardware.microphone" />
+    <uses-feature android:name="android.hardware.bluetooth" />
+    <uses-feature android:name="android.hardware.location.gps" />
+    <uses-feature android:name="android.hardware.location.network" />
+
+    <!-- Screen Orientation -->
+    <uses-configuration android:reqFiveWayNav="true" />
+    <uses-configuration android:reqHardKeyboard="false" />
+    <uses-configuration android:reqKeyboardType="false" />
+    <uses-configuration android:reqNavigation="false" />
+    <uses-configuration android:reqTouchScreen="true" />
+
+    <!-- NDK Support -->
+    <uses-native-library android:name="native-core" />
+
+</manifest>
