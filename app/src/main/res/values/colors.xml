@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Primary colors -->
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+
+    <!-- Secondary colors -->
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+
+    <!-- Material 3 colors -->
+    <color name="md_ref_pal_surface">#FFFBF8F1</color>
+    <color name="md_ref_pal_surface_variant">#FFE7E0EC</color>
+    <color name="md_ref_pal_primary">#FF6750A4</color>
+    <color name="md_ref_pal_primary_container">#FFEADDFF</color>
+    <color name="md_ref_pal_on_primary_container">#FF211055</color>
+    <color name="md_ref_pal_secondary">#FF625B71</color>
+    <color name="md_ref_pal_secondary_container">#FFE8DEF4</color>
+    <color name="md_ref_pal_on_secondary_container">#FF1E192B</color>
+    <color name="md_ref_pal_tertiary">#FF7D5260</color>
+    <color name="md_ref_pal_tertiary_container">#FFFFD8E4</color>
+    <color name="md_ref_pal_on_tertiary_container">#FF31111D</color>
+    <color name="md_ref_pal_error">#FFB3261E</color>
+    <color name="md_ref_pal_error_container">#FFF9DEDC</color>
+    <color name="md_ref_pal_on_error_container">#FF410E0B</color>
+    <color name="md_ref_pal_on_background">#FF1C1B1F</color>
+    <color name="md_ref_pal_on_surface">#FF1C1B1F</color>
+    <color name="md_ref_pal_on_surface_variant">#FF49454F</color>
+    <color name="md_ref_pal_outline">#FF79747E</color>
+    <color name="md_ref_pal_outline_variant">#FFCAC4D0</color>
+    <color name="md_ref_pal_shadow">#FF000000</color>
+    <color name="md_ref_pal_scrim">#FF000000</color>
+    <color name="md_ref_pal_inverse_surface">#FF313033</color>
+    <color name="md_ref_pal_inverse_on_surface">#FFF5F5F5</color>
+    <color name="md_ref_pal_inverse_primary">#FFD0BCFF</color>
+
+    <!-- Custom colors -->
+    <color name="color_primary">#FF6750A4</color>
+    <color name="color_primary_variant">#FF3700B3</color>
+    <color name="color_secondary">#FF03DAC5</color>
+    <color name="color_secondary_variant">#FF018786</color>
+    <color name="color_background">#FFFBF8F1</color>
+    <color name="color_surface">#FFFFFFFF</color>
+    <color name="color_error">#FFB3261E</color>
+    <color name="color_on_primary">#FFFFFFFF</color>
+    <color name="color_on_secondary">#FF000000</color>
+    <color name="color_on_background">#FF1C1B1F</color>
+    <color name="color_on_surface">#FF1C1B1F</color>
+    <color name="color_on_error">#FFFFFFFF</color>
+
+    <!-- Status colors -->
+    <color name="color_success">#FF4CAF50</color>
+    <color name="color_warning">#FFFFC107</color>
+    <color name="color_info">#FF2196F3</color>
+
+    <!-- AI state colors -->
+    <color name="color_ai_idle">#FF9E9E9E</color>
+    <color name="color_ai_listening">#FF4CAF50</color>
+    <color name="color_ai_thinking">#FF2196F3</color>
+    <color name="color_ai_speaking">#FFFFC107</color>
+    <color name="color_ai_error">#FFB3261E</color>
+
+    <!-- Thermal state colors -->
+    <color name="color_thermal_normal">#FF4CAF50</color>
+    <color name="color_thermal_warm">#FFFFC107</color>
+    <color name="color_thermal_hot">#FFFF9800</color>
+    <color name="color_thermal_critical">#FFB3261E</color>
+</resources>
