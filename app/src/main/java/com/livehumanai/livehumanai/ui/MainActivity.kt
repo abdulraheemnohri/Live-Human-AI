@@ -8,11 +8,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import com.livehumanai.livehumanai.ui.theme.LiveHumanAITheme
+import dagger.hilt.android.AndroidEntryPoint
 
 /**
  * MainActivity is the entry point of the Live Human AI app.
  * It sets up the Compose UI and navigates to the main screen.
  */
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {

@@ -2,11 +2,13 @@ package com.livehumanai.livehumanai
 
 import android.app.Application
 import com.livehumanai.livehumanai.nativebridge.NativeBridge
+import dagger.hilt.android.HiltAndroidApp
 
 /**
  * LiveHumanAIApp is the main Application class for the Live Human AI app.
  * It initializes the native runtime and provides access to it throughout the app.
  */
+@HiltAndroidApp
 class LiveHumanAIApp : Application() {
 
     // Singleton instance of the native bridge
