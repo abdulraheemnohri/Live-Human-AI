@@ -6,29 +6,23 @@
 #include <string>
 
 static LiveHumanAI::JalebiLoopEngine g_jalebiLoopEngine;
-
-// Global reference to NativeCore
 static NativeCore* g_nativeCore = nullptr;
 
-// Helper function to convert Java string to C++ string
 std::string jstringToString(JNIEnv* env, jstring jstr) {
     if (!jstr) return "";
     const char* chars = env->GetStringUTFChars(jstr, nullptr);
+    if (!chars) return "";
     std::string str(chars);
     env->ReleaseStringUTFChars(jstr, chars);
     return str;
 }
 
-// Helper function to convert C++ string to Java string
 jstring stringToJstring(JNIEnv* env, const std::string& str) {
     return env->NewStringUTF(str.c_str());
 }
 
-// NativeCore functions
-JNIEXPORT jlong JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeInitialize(
-    JNIEnv* env,
-    jobject /* this */
-) {
+JNIEXPORT jlong JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeInitialize(JNIEnv*, jobject) {
+    if (!g_jalebiLoopEngine.initialize()) return 0;
     if (!g_nativeCore) {
         g_nativeCore = new NativeCore();
         if (!g_nativeCore->initialize()) {
@@ -40,206 +34,150 @@ JNIEXPORT jlong JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBrid
     return reinterpret_cast<jlong>(g_nativeCore);
 }
 
-JNIEXPORT void JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeShutdown(
-    JNIEnv* env,
-    jobject /* this */,
-    jlong nativeHandle
-) {
+JNIEXPORT void JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeShutdown(JNIEnv*, jobject, jlong nativeHandle) {
     NativeCore* core = reinterpret_cast<NativeCore*>(nativeHandle);
     if (core) {
         core->shutdown();
         delete core;
     }
     g_nativeCore = nullptr;
+    g_jalebiLoopEngine.shutdown();
 }
 
-JNIEXPORT jstring JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeGetVersion(
-    JNIEnv* env,
-    jobject /* this */,
-    jlong nativeHandle
-) {
+JNIEXPORT jstring JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeGetVersion(JNIEnv* env, jobject, jlong nativeHandle) {
     NativeCore* core = reinterpret_cast<NativeCore*>(nativeHandle);
-    if (!core) return nullptr;
-    return stringToJstring(env, core->getVersion());
+    return core ? stringToJstring(env, core->getVersion()) : nullptr;
 }
 
-JNIEXPORT jstring JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeGetRuntimeStatus(
-    JNIEnv* env,
-    jobject /* this */,
-    jlong nativeHandle
-) {
+JNIEXPORT jstring JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeGetRuntimeStatus(JNIEnv* env, jobject, jlong nativeHandle) {
     NativeCore* core = reinterpret_cast<NativeCore*>(nativeHandle);
-    if (!core) return nullptr;
-    return stringToJstring(env, core->getRuntimeStatus());
+    return core ? stringToJstring(env, core->getRuntimeStatus()) : nullptr;
 }
 
-JNIEXPORT jstring JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeGetDeviceProfile(
-    JNIEnv* env,
-    jobject /* this */,
-    jlong nativeHandle
-) {
+JNIEXPORT jstring JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeGetDeviceProfile(JNIEnv* env, jobject, jlong nativeHandle) {
     NativeCore* core = reinterpret_cast<NativeCore*>(nativeHandle);
-    if (!core) return nullptr;
-    return stringToJstring(env, core->getDeviceProfile());
+    return core ? stringToJstring(env, core->getDeviceProfile()) : nullptr;
 }
 
-// AI Engine functions
-JNIEXPORT jboolean JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeLoadModel(
-    JNIEnv* env,
-    jobject /* this */,
-    jlong nativeHandle,
-    jstring modelName
-) {
+JNIEXPORT jboolean JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeLoadModel(JNIEnv* env, jobject, jlong nativeHandle, jstring modelName) {
     NativeCore* core = reinterpret_cast<NativeCore*>(nativeHandle);
     if (!core) return JNI_FALSE;
-
-    std::string model = jstringToString(env, modelName);
-    return core->getAIEngine()->loadModel(model) ? JNI_TRUE : JNI_FALSE;
+    return core->getAIEngine()->loadModel(jstringToString(env, modelName)) ? JNI_TRUE : JNI_FALSE;
 }
 
-JNIEXPORT jboolean JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeUnloadModel(
-    JNIEnv* env,
-    jobject /* this */,
-    jlong nativeHandle,
-    jstring modelName
-) {
+JNIEXPORT jboolean JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeUnloadModel(JNIEnv* env, jobject, jlong nativeHandle, jstring modelName) {
     NativeCore* core = reinterpret_cast<NativeCore*>(nativeHandle);
     if (!core) return JNI_FALSE;
-
-    std::string model = jstringToString(env, modelName);
-    return core->getAIEngine()->unloadModel(model) ? JNI_TRUE : JNI_FALSE;
+    return core->getAIEngine()->unloadModel(jstringToString(env, modelName)) ? JNI_TRUE : JNI_FALSE;
 }
 
-JNIEXPORT jstring JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeGenerate(
-    JNIEnv* env,
-    jobject /* this */,
-    jlong nativeHandle,
-    jstring prompt,
-    jstring modelName,
-    jfloat temperature,
-    jint maxTokens
-) {
+JNIEXPORT jstring JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeGenerate(JNIEnv* env, jobject, jlong nativeHandle, jstring prompt, jstring modelName, jfloat temperature, jint maxTokens) {
     NativeCore* core = reinterpret_cast<NativeCore*>(nativeHandle);
     if (!core) return nullptr;
-
-    std::string promptStr = jstringToString(env, prompt);
-    std::string model = jstringToString(env, modelName);
-    std::string result = core->getAIEngine()->generate(promptStr, model, temperature, maxTokens);
-    return stringToJstring(env, result);
+    return stringToJstring(env, core->getAIEngine()->generate(
+        jstringToString(env, prompt), jstringToString(env, modelName), temperature, maxTokens));
 }
 
-JNIEXPORT void JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeStopGeneration(
-    JNIEnv* env,
-    jobject /* this */,
-    jlong nativeHandle
-) {
+JNIEXPORT void JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeStopGeneration(JNIEnv*, jobject, jlong nativeHandle) {
     NativeCore* core = reinterpret_cast<NativeCore*>(nativeHandle);
-    if (core) {
-        core->getAIEngine()->stopGeneration();
-    }
+    if (core) core->getAIEngine()->stopGeneration();
 }
 
-// Hardware monitoring functions
-JNIEXPORT jlong JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeGetTotalRAM(
-    JNIEnv* env,
-    jobject /* this */,
-    jlong nativeHandle
-) {
+JNIEXPORT jlong JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeGetTotalRAM(JNIEnv*, jobject, jlong nativeHandle) {
     NativeCore* core = reinterpret_cast<NativeCore*>(nativeHandle);
-    if (!core) return 0;
-    return static_cast<jlong>(core->getTotalRAM());
+    return core ? static_cast<jlong>(core->getTotalRAM()) : 0;
 }
 
-JNIEXPORT jlong JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeGetAvailableRAM(
-    JNIEnv* env,
-    jobject /* this */,
-    jlong nativeHandle
-) {
+JNIEXPORT jlong JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeGetAvailableRAM(JNIEnv*, jobject, jlong nativeHandle) {
     NativeCore* core = reinterpret_cast<NativeCore*>(nativeHandle);
-    if (!core) return 0;
-    return static_cast<jlong>(core->getAvailableRAM());
+    return core ? static_cast<jlong>(core->getAvailableRAM()) : 0;
 }
 
-JNIEXPORT jfloat JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeGetRAMUsagePercentage(
-    JNIEnv* env,
-    jobject /* this */,
-    jlong nativeHandle
-) {
+JNIEXPORT jfloat JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeGetRAMUsagePercentage(JNIEnv*, jobject, jlong nativeHandle) {
     NativeCore* core = reinterpret_cast<NativeCore*>(nativeHandle);
-    if (!core) return 0.0f;
-    return core->getRAMUsagePercentage();
+    return core ? core->getRAMUsagePercentage() : 0.0f;
 }
 
-JNIEXPORT jfloat JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeGetCPUUsage(
-    JNIEnv* env,
-    jobject /* this */,
-    jlong nativeHandle
-) {
+JNIEXPORT jfloat JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeGetCPUUsage(JNIEnv*, jobject, jlong nativeHandle) {
     NativeCore* core = reinterpret_cast<NativeCore*>(nativeHandle);
-    if (!core) return 0.0f;
-    return core->getEngine()->getCPUUsage();
+    return core ? core->getEngine()->getCPUUsage() : 0.0f;
 }
 
-JNIEXPORT jfloat JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeGetTemperature(
-    JNIEnv* env,
-    jobject /* this */,
-    jlong nativeHandle
-) {
+JNIEXPORT jfloat JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeGetTemperature(JNIEnv*, jobject, jlong nativeHandle) {
     NativeCore* core = reinterpret_cast<NativeCore*>(nativeHandle);
-    if (!core) return 0.0f;
-    return core->getEngine()->getTemperature();
+    return core ? core->getEngine()->getTemperature() : 0.0f;
 }
 
-JNIEXPORT jfloat JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeGetBatteryLevel(
-    JNIEnv* env,
-    jobject /* this */,
-    jlong nativeHandle
-) {
+JNIEXPORT jfloat JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeGetBatteryLevel(JNIEnv*, jobject, jlong nativeHandle) {
     NativeCore* core = reinterpret_cast<NativeCore*>(nativeHandle);
-    if (!core) return 0.0f;
-    return core->getEngine()->getBatteryLevel();
+    return core ? core->getEngine()->getBatteryLevel() : 0.0f;
 }
 
-// Performance mode functions
-JNIEXPORT void JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeSetPerformanceMode(
-    JNIEnv* env,
-    jobject /* this */,
-    jlong nativeHandle,
-    jint mode
-) {
+JNIEXPORT void JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeSetPerformanceMode(JNIEnv*, jobject, jlong nativeHandle, jint mode) {
     NativeCore* core = reinterpret_cast<NativeCore*>(nativeHandle);
-    if (core) {
-        NativeCore::PerformanceMode perfMode = static_cast<NativeCore::PerformanceMode>(mode);
-        core->setPerformanceMode(perfMode);
-    }
+    if (core) core->setPerformanceMode(static_cast<NativeCore::PerformanceMode>(mode));
 }
 
-JNIEXPORT jint JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeGetPerformanceMode(
-    JNIEnv* env,
-    jobject /* this */,
-    jlong nativeHandle
-) {
+JNIEXPORT jint JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeGetPerformanceMode(JNIEnv*, jobject, jlong nativeHandle) {
     NativeCore* core = reinterpret_cast<NativeCore*>(nativeHandle);
-    if (!core) return -1;
-    return static_cast<jint>(core->getPerformanceMode());
+    return core ? static_cast<jint>(core->getPerformanceMode()) : -1;
 }
 
-// Jalebi Cognitive Loop functions
-JNIEXPORT jint JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeCreateJalebiLoop(
-    JNIEnv* env,
-    jobject /* this */,
-    jstring goal,
-    jint maxIterations
-) {
-    std::string goalStr = jstringToString(env, goal);
-    return g_jalebiLoopEngine.createLoop(goalStr, maxIterations);
+JNIEXPORT jint JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeCreateJalebiLoop(JNIEnv* env, jobject, jstring goal, jint maxIterations) {
+    return g_jalebiLoopEngine.createLoop(jstringToString(env, goal), maxIterations);
 }
 
-JNIEXPORT jstring JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeGetJalebiLoopState(
-    JNIEnv* env,
-    jobject /* this */,
-    jint loopId
-) {
-    LiveHumanAI::JalebiLoopEngine::LoopState state = g_jalebiLoopEngine.getLoopState(loopId);
-    return stringToJstring(env, g_jalebiLoopEngine.getStateName(state));
+JNIEXPORT jboolean JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeStartJalebiLoop(JNIEnv*, jobject, jint loopId) {
+    return g_jalebiLoopEngine.startLoop(loopId) ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT jboolean JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativePauseJalebiLoop(JNIEnv*, jobject, jint loopId) {
+    return g_jalebiLoopEngine.pauseLoop(loopId) ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT jboolean JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeResumeJalebiLoop(JNIEnv*, jobject, jint loopId) {
+    return g_jalebiLoopEngine.resumeLoop(loopId) ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT jboolean JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeCancelJalebiLoop(JNIEnv*, jobject, jint loopId) {
+    return g_jalebiLoopEngine.cancelLoop(loopId) ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT jstring JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeExecuteJalebiIteration(JNIEnv* env, jobject, jint loopId, jstring input) {
+    const auto iteration = g_jalebiLoopEngine.executeIteration(loopId, jstringToString(env, input));
+    return stringToJstring(env, g_jalebiLoopEngine.getLoopHistoryJson(loopId));
+}
+
+JNIEXPORT jboolean JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeEvaluateJalebiLoop(JNIEnv* env, jobject, jint loopId, jfloat confidence, jboolean goalCompleted, jstring evaluation, jstring nextAction, jstring memoryUpdates) {
+    return g_jalebiLoopEngine.recordEvaluation(
+        loopId,
+        confidence,
+        goalCompleted == JNI_TRUE,
+        jstringToString(env, evaluation),
+        jstringToString(env, nextAction),
+        jstringToString(env, memoryUpdates)) ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT jstring JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeGetJalebiLoopState(JNIEnv* env, jobject, jint loopId) {
+    return stringToJstring(env, g_jalebiLoopEngine.getStateName(g_jalebiLoopEngine.getLoopState(loopId)));
+}
+
+JNIEXPORT jfloat JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeGetJalebiConfidence(JNIEnv*, jobject, jint loopId) {
+    return g_jalebiLoopEngine.getLatestConfidence(loopId);
+}
+
+JNIEXPORT jint JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeGetJalebiIteration(JNIEnv*, jobject, jint loopId) {
+    return g_jalebiLoopEngine.getCurrentIteration(loopId);
+}
+
+JNIEXPORT jstring JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeGetJalebiHistory(JNIEnv* env, jobject, jint loopId) {
+    return stringToJstring(env, g_jalebiLoopEngine.getLoopHistoryJson(loopId));
+}
+
+JNIEXPORT jboolean JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeCompleteJalebiLoop(JNIEnv*, jobject, jint loopId) {
+    return g_jalebiLoopEngine.completeLoop(loopId) ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT jboolean JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeFailJalebiLoop(JNIEnv* env, jobject, jint loopId, jstring reason) {
+    return g_jalebiLoopEngine.failLoop(loopId, jstringToString(env, reason)) ? JNI_TRUE : JNI_FALSE;
 }
