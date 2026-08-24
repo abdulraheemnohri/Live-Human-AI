@@ -1,39 +1,34 @@
 #ifndef JALEBI_LOOP_ENGINE_H
 #define JALEBI_LOOP_ENGINE_H
 
-#include <string>
-#include <vector>
-#include <memory>
 #include <mutex>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 namespace LiveHumanAI {
 
 class JalebiLoopEngine {
 public:
     enum class LoopState {
-        IDLE,
-        INITIALIZING,
-        PERCEIVING,
-        INTERPRETING,
-        REASONING,
-        PLANNING,
-        ACTING,
-        OBSERVING,
-        EVALUATING,
-        UPDATING_MEMORY,
-        REPLANNING,
-        WAITING_USER,
-        COMPLETED,
-        FAILED,
-        CANCELLED,
-        PAUSED,
-        RESOURCE_LIMIT,
+        IDLE, INITIALIZING, PERCEIVING, INTERPRETING, REASONING, PLANNING,
+        ACTING, OBSERVING, EVALUATING, UPDATING_MEMORY, REPLANNING,
+        WAITING_USER, COMPLETED, FAILED, CANCELLED, PAUSED, RESOURCE_LIMIT,
         SAFETY_BLOCKED
     };
 
+    struct Goal {
+        int id = 0;
+        std::string description;
+        int priority = 0;
+        long long deadlineMs = 0;
+        float successConfidence = 0.90f;
+        int maxIterations = 8;
+    };
+
     struct Iteration {
-        int iterationId;
-        long long timestamp;
+        int iterationId = 0;
+        long long timestamp = 0;
         std::string input;
         std::string perception;
         std::string interpretation;
@@ -42,8 +37,21 @@ public:
         std::string action;
         std::string observation;
         std::string evaluation;
-        float confidence;
+        float confidence = 0.0f;
+        std::vector<std::string> errors;
+        std::string memoryUpdates;
         std::string nextAction;
+    };
+
+    struct LoopSnapshot {
+        int loopId = 0;
+        Goal goal;
+        LoopState state = LoopState::IDLE;
+        int currentIteration = 0;
+        float confidence = 0.0f;
+        long long createdAtMs = 0;
+        long long updatedAtMs = 0;
+        std::vector<Iteration> history;
     };
 
     JalebiLoopEngine();
@@ -52,26 +60,57 @@ public:
     bool initialize();
     void shutdown();
 
-    int createLoop(const std::string& goal, int maxIterations = 8);
+    int createLoop(const std::string& goal, int maxIterations = 8, float successConfidence = 0.90f);
     bool startLoop(int loopId);
-    void pauseLoop(int loopId);
-    void resumeLoop(int loopId);
-    void cancelLoop(int loopId);
+    bool pauseLoop(int loopId);
+    bool resumeLoop(int loopId);
+    bool cancelLoop(int loopId);
+    bool completeLoop(int loopId);
+    bool failLoop(int loopId, const std::string& reason);
 
+    // Records one bounded cognitive iteration. External AI/tool components own
+    // actual perception, reasoning and actions; this engine owns lifecycle.
     Iteration executeIteration(int loopId, const std::string& currentInput);
+
+    // Records external evaluation evidence and decides the next loop state.
+    bool recordEvaluation(
+        int loopId,
+        float confidence,
+        bool goalCompleted,
+        const std::string& evaluation,
+        const std::string& nextAction,
+        const std::string& memoryUpdates = ""
+    );
+
     LoopState getLoopState(int loopId) const;
     float getLatestConfidence(int loopId) const;
+    int getCurrentIteration(int loopId) const;
+    Goal getGoal(int loopId) const;
+    LoopSnapshot getSnapshot(int loopId) const;
+    std::vector<Iteration> getLoopHistory(int loopId) const;
+    std::string getLoopHistoryJson(int loopId) const;
     std::string getStateName(LoopState state) const;
 
 private:
+    struct LoopContext {
+        Goal goal;
+        LoopState state = LoopState::INITIALIZING;
+        int currentIteration = 0;
+        float confidence = 0.0f;
+        long long createdAtMs = 0;
+        long long updatedAtMs = 0;
+        std::vector<Iteration> history;
+    };
+
+    static long long nowMs();
+    static std::string jsonEscape(const std::string& value);
+    static int clampMaxIterations(int maxIterations);
+    static float clampConfidence(float confidence);
+
     mutable std::mutex m_mutex;
-    LoopState m_currentState;
-    int m_activeLoopId;
-    int m_currentIteration;
-    int m_maxIterations;
-    float m_confidence;
-    std::string m_goal;
-    std::vector<Iteration> m_history;
+    std::unordered_map<int, LoopContext> m_loops;
+    int m_nextLoopId;
+    bool m_initialized;
 };
 
 } // namespace LiveHumanAI
