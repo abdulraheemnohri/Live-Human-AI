@@ -39,15 +39,15 @@ class SettingsRepository @Inject constructor(
     // Convenience methods for common setting types
 
     suspend fun getBooleanSetting(key: String, defaultValue: Boolean = false): Boolean {
-        return settingsDao.getBooleanSetting(key) ?: defaultValue
+        return settingsDao.getStringSetting(key)?.toBooleanStrictOrNull() ?: defaultValue
     }
 
     suspend fun getIntegerSetting(key: String, defaultValue: Int = 0): Int {
-        return settingsDao.getIntegerSetting(key) ?: defaultValue
+        return settingsDao.getStringSetting(key)?.toIntOrNull() ?: defaultValue
     }
 
     suspend fun getFloatSetting(key: String, defaultValue: Float = 0f): Float {
-        return settingsDao.getFloatSetting(key) ?: defaultValue
+        return settingsDao.getStringSetting(key)?.toFloatOrNull() ?: defaultValue
     }
 
     suspend fun getStringSetting(key: String, defaultValue: String = ""): String {

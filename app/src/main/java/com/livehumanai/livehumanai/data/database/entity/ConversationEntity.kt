@@ -3,6 +3,7 @@ package com.livehumanai.livehumanai.data.database.entity
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.TypeConverters
+import com.livehumanai.livehumanai.data.database.Converters
 import java.util.Date
 
 /**

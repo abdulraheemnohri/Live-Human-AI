@@ -33,16 +33,7 @@ interface SettingsDao {
 
     // Convenience methods for common setting types
 
-    @Query("SELECT value FROM settings WHERE key = :key AND type = 'BOOLEAN'")
-    suspend fun getBooleanSetting(key: String): Boolean?
-
-    @Query("SELECT value FROM settings WHERE key = :key AND type = 'INTEGER'")
-    suspend fun getIntegerSetting(key: String): Int?
-
-    @Query("SELECT value FROM settings WHERE key = :key AND type = 'FLOAT'")
-    suspend fun getFloatSetting(key: String): Float?
-
-    @Query("SELECT value FROM settings WHERE key = :key AND type = 'STRING'")
+    @Query("SELECT value FROM settings WHERE key = :key")
     suspend fun getStringSetting(key: String): String?
 
     // Batch operations

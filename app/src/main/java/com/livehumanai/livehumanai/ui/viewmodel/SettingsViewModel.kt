@@ -144,10 +144,10 @@ class SettingsViewModel @Inject constructor(
 
     private fun updateNativePerformanceMode(mode: String) {
         val nativeMode = when (mode) {
-            "Battery Saver" -> com.livehumanai.livehumanai.native.NativeBridge.PerformanceMode.BATTERY_SAVER
-            "Performance" -> com.livehumanai.livehumanai.native.NativeBridge.PerformanceMode.PERFORMANCE
-            "Maximum" -> com.livehumanai.livehumanai.native.NativeBridge.PerformanceMode.MAXIMUM
-            else -> com.livehumanai.livehumanai.native.NativeBridge.PerformanceMode.BALANCED
+            "Battery Saver" -> com.livehumanai.livehumanai.nativebridge.NativeBridge.PerformanceMode.BATTERY_SAVER
+            "Performance" -> com.livehumanai.livehumanai.nativebridge.NativeBridge.PerformanceMode.PERFORMANCE
+            "Maximum" -> com.livehumanai.livehumanai.nativebridge.NativeBridge.PerformanceMode.MAXIMUM
+            else -> com.livehumanai.livehumanai.nativebridge.NativeBridge.PerformanceMode.BALANCED
         }
         aiRepository.setPerformanceMode(nativeMode)
     }

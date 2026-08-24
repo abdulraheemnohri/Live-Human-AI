@@ -10,16 +10,20 @@
     <color name="teal_700">#FF018786</color>
 
     <!-- Material 3 colors -->
+    <color name="md_ref_pal_background">#FFFBF8F1</color>
     <color name="md_ref_pal_surface">#FFFBF8F1</color>
     <color name="md_ref_pal_surface_variant">#FFE7E0EC</color>
     <color name="md_ref_pal_primary">#FF6750A4</color>
     <color name="md_ref_pal_primary_container">#FFEADDFF</color>
+    <color name="md_ref_pal_on_primary">#FFFFFFFF</color>
     <color name="md_ref_pal_on_primary_container">#FF211055</color>
     <color name="md_ref_pal_secondary">#FF625B71</color>
     <color name="md_ref_pal_secondary_container">#FFE8DEF4</color>
+    <color name="md_ref_pal_on_secondary">#FFFFFFFF</color>
     <color name="md_ref_pal_on_secondary_container">#FF1E192B</color>
     <color name="md_ref_pal_tertiary">#FF7D5260</color>
     <color name="md_ref_pal_tertiary_container">#FFFFD8E4</color>
+    <color name="md_ref_pal_on_tertiary">#FFFFFFFF</color>
     <color name="md_ref_pal_on_tertiary_container">#FF31111D</color>
     <color name="md_ref_pal_error">#FFB3261E</color>
     <color name="md_ref_pal_error_container">#FFF9DEDC</color>

@@ -32,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.livehumanai.livehumanai.ui.theme.LiveHumanAITheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -169,7 +170,7 @@ fun ChatScreen() {
                         scope.launch {
                             val startTime = System.currentTimeMillis()
                             val responseText = withContext(Dispatchers.IO) {
-                                val nativeBridge = com.livehumanai.livehumanai.native.NativeBridge.getInstance()
+                                val nativeBridge = com.livehumanai.livehumanai.nativebridge.NativeBridge.getInstance()
                                 if (nativeBridge.isInitialized) {
                                     nativeBridge.generate(userPrompt, currentModel, 0.7f, 512)
                                 } else {
@@ -208,7 +209,7 @@ fun ChatScreen() {
         if (isGenerating) {
             Button(
                 onClick = {
-                    val nativeBridge = com.livehumanai.livehumanai.native.NativeBridge.getInstance()
+                    val nativeBridge = com.livehumanai.livehumanai.nativebridge.NativeBridge.getInstance()
                     if (nativeBridge.isInitialized) {
                         nativeBridge.stopGeneration()
                     }

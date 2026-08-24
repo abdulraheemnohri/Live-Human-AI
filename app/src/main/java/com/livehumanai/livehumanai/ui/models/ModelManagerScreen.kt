@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -33,6 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.livehumanai.livehumanai.ui.theme.LiveHumanAITheme
 import kotlinx.coroutines.launch
 
 /**
@@ -147,12 +149,12 @@ fun ModelManagerScreen() {
                     isDownloading = downloadingModels.containsKey(model.name),
                     downloadProgress = downloadingModels[model.name] ?: 0f,
                     onLoad = {
-                        val nativeBridge = com.livehumanai.livehumanai.native.NativeBridge.getInstance()
+                        val nativeBridge = com.livehumanai.livehumanai.nativebridge.NativeBridge.getInstance()
                         if (nativeBridge.isInitialized) nativeBridge.loadModel(model.name)
                         allModels = allModels.map { if (it.name == model.name) it.copy(isLoaded = true) else it }
                     },
                     onUnload = {
-                        val nativeBridge = com.livehumanai.livehumanai.native.NativeBridge.getInstance()
+                        val nativeBridge = com.livehumanai.livehumanai.nativebridge.NativeBridge.getInstance()
                         if (nativeBridge.isInitialized) nativeBridge.unloadModel(model.name)
                         allModels = allModels.map { if (it.name == model.name) it.copy(isLoaded = false) else it }
                     },

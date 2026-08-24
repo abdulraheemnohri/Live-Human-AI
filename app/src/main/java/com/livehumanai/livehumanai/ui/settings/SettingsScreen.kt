@@ -29,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.livehumanai.livehumanai.ui.theme.LiveHumanAITheme
 
 /**
  * SettingsScreen provides configuration options for the Live Human AI app.
@@ -102,13 +103,14 @@ fun SettingsScreen(
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.selectable(
-                            selected = performanceMode == "Battery Saver",
+                            selected = (performanceMode == "Battery Saver"),
+                            onClick = { performanceMode = "Battery Saver" },
                             role = Role.RadioButton
                         )
                     ) {
                         RadioButton(
-                            selected = performanceMode == "Battery Saver",
-                            onClick = { performanceMode = "Battery Saver" }
+                            selected = (performanceMode == "Battery Saver"),
+                            onClick = null
                         )
                         Text("Battery Saver")
                     }
@@ -116,13 +118,14 @@ fun SettingsScreen(
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.selectable(
-                            selected = performanceMode == "Balanced",
+                            selected = (performanceMode == "Balanced"),
+                            onClick = { performanceMode = "Balanced" },
                             role = Role.RadioButton
                         )
                     ) {
                         RadioButton(
-                            selected = performanceMode == "Balanced",
-                            onClick = { performanceMode = "Balanced" }
+                            selected = (performanceMode == "Balanced"),
+                            onClick = null
                         )
                         Text("Balanced")
                     }
@@ -130,13 +133,14 @@ fun SettingsScreen(
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.selectable(
-                            selected = performanceMode == "Performance",
+                            selected = (performanceMode == "Performance"),
+                            onClick = { performanceMode = "Performance" },
                             role = Role.RadioButton
                         )
                     ) {
                         RadioButton(
-                            selected = performanceMode == "Performance",
-                            onClick = { performanceMode = "Performance" }
+                            selected = (performanceMode == "Performance"),
+                            onClick = null
                         )
                         Text("Performance")
                     }
@@ -144,13 +148,14 @@ fun SettingsScreen(
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.selectable(
-                            selected = performanceMode == "Maximum",
+                            selected = (performanceMode == "Maximum"),
+                            onClick = { performanceMode = "Maximum" },
                             role = Role.RadioButton
                         )
                     ) {
                         RadioButton(
-                            selected = performanceMode == "Maximum",
-                            onClick = { performanceMode = "Maximum" }
+                            selected = (performanceMode == "Maximum"),
+                            onClick = null
                         )
                         Text("Maximum")
                     }

@@ -12,7 +12,7 @@ import com.livehumanai.livehumanai.data.repository.ConversationRepository
 import com.livehumanai.livehumanai.data.repository.MemoryRepository
 import com.livehumanai.livehumanai.data.repository.ModelRepository
 import com.livehumanai.livehumanai.data.repository.SettingsRepository
-import com.livehumanai.livehumanai.native.NativeBridge
+import com.livehumanai.livehumanai.nativebridge.NativeBridge
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

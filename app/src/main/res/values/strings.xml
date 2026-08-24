@@ -58,7 +58,7 @@
     <string name="settings_microphone">Microphone</string>
     <string name="settings_stt_model">STT Model</string>
     <string name="settings_tts_model">TTS Model</string>
-    <string name="settings_voice">Voice</string>
+    <string name="settings_voice_option">Voice</string>
     <string name="settings_speech_speed">Speech Speed</string>
     <string name="settings_speech_pitch">Speech Pitch</string>
     <string name="settings_camera">Camera</string>

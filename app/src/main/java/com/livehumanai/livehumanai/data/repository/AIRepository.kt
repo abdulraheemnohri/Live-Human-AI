@@ -1,6 +1,6 @@
 package com.livehumanai.livehumanai.data.repository
 
-import com.livehumanai.livehumanai.native.NativeBridge
+import com.livehumanai.livehumanai.nativebridge.NativeBridge
 import javax.inject.Inject
 
 /**

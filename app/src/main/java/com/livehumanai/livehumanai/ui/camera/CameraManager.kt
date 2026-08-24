@@ -5,8 +5,7 @@ import android.hardware.camera2.CameraAccessException
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraManager
 import androidx.camera.core.CameraSelector
-import androidx.camera.core.Preview
-import androidx.camera.lifecycle.LifecycleCameraController
+import androidx.camera.view.LifecycleCameraController
 import androidx.camera.view.PreviewView
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -58,8 +57,8 @@ class CameraManager(private val context: Context) {
             isCameraAvailable = availableCameras.isNotEmpty()
 
             // Create camera controller
-            cameraController = LifecycleCameraController(context, lifecycleOwner).apply {
-                setCameraSelector(currentCameraSelector)
+            cameraController = LifecycleCameraController(context).apply {
+                cameraSelector = currentCameraSelector
                 bindToLifecycle(lifecycleOwner)
             }
 
@@ -78,10 +77,11 @@ class CameraManager(private val context: Context) {
     // Start camera
     fun startCamera() {
         if (isCameraAvailable && !isCameraActive) {
-            cameraController?.let { controller ->
-                controller.bindToLifecycle((previewView?.context as? LifecycleOwner) ?: return)
+            val owner = previewView?.context as? LifecycleOwner
+            if (owner != null) {
+                cameraController?.bindToLifecycle(owner)
+                isCameraActive = true
             }
-            isCameraActive = true
         }
     }
 
@@ -101,7 +101,7 @@ class CameraManager(private val context: Context) {
             CameraSelector.DEFAULT_BACK_CAMERA
         }
 
-        cameraController?.setCameraSelector(currentCameraSelector)
+        cameraController?.cameraSelector = currentCameraSelector
     }
 
     // Toggle flash
@@ -113,13 +113,11 @@ class CameraManager(private val context: Context) {
     // Capture image
     fun captureImage() {
         // In a real implementation, this would capture an image
-        // and return it as a bitmap or file
     }
 
     // Set up frame analysis
     fun setupFrameAnalysis() {
         // In a real implementation, this would set up a frame analyzer
-        // to process camera frames for vision tasks
     }
 
     // Cleanup

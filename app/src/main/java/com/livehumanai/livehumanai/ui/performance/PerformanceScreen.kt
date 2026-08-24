@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.livehumanai.livehumanai.ui.theme.LiveHumanAITheme
 
 /**
  * PerformanceScreen displays real-time performance metrics for the AI runtime.
@@ -34,7 +35,7 @@ fun PerformanceScreen() {
     var batteryLevel by remember { mutableStateOf(90f) }
 
     androidx.compose.runtime.LaunchedEffect(Unit) {
-        val nativeBridge = com.livehumanai.livehumanai.native.NativeBridge.getInstance()
+        val nativeBridge = com.livehumanai.livehumanai.nativebridge.NativeBridge.getInstance()
         if (nativeBridge.isInitialized) {
             val cpu = nativeBridge.getCPUUsage()
             val ramPct = nativeBridge.getRAMUsagePercentage()
@@ -189,7 +190,7 @@ fun PerformanceScreen() {
             val thermalColor = when (thermalState) {
                 "CRITICAL" -> MaterialTheme.colorScheme.error
                 "HOT" -> MaterialTheme.colorScheme.errorContainer
-                "WARM" -> MaterialTheme.colorScheme.warning
+                "WARM" -> MaterialTheme.colorScheme.tertiary
                 else -> MaterialTheme.colorScheme.primary
             }
 

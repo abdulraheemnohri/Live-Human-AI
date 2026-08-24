@@ -6,6 +6,9 @@ import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
 import android.os.Build
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import java.io.ByteArrayOutputStream
 
 /**
@@ -18,11 +21,11 @@ class AudioManager(private val context: Context) {
         const val SAMPLE_RATE = 16000
         const val CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_MONO
         const val AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT
-        const val BUFFER_SIZE = AudioRecord.getMinBufferSize(
+        val BUFFER_SIZE = AudioRecord.getMinBufferSize(
             SAMPLE_RATE,
             CHANNEL_CONFIG,
             AUDIO_FORMAT
-        )
+        ).coerceAtLeast(2048)
     }
 
     private var audioRecord: AudioRecord? = null
@@ -46,7 +49,7 @@ class AudioManager(private val context: Context) {
             // Get available input devices
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 val audioDeviceManager = context.getSystemService(Context.AUDIO_SERVICE) as android.media.AudioManager
-                availableInputDevices = audioDeviceManager.getDevices(AudioDeviceInfo.GET_ALL)
+                availableInputDevices = audioDeviceManager.getDevices(android.media.AudioManager.GET_DEVICES_INPUTS)
                     .filter { it.type == AudioDeviceInfo.TYPE_BUILTIN_MIC || it.type == AudioDeviceInfo.TYPE_USB_HEADSET }
                     .toList()
             }

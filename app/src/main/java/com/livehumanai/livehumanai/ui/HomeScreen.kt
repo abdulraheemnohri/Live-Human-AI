@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.livehumanai.livehumanai.ui.theme.LiveHumanAITheme
 
 /**
  * HomeScreen is the main screen of the Live Human AI app.
@@ -40,7 +41,7 @@ fun HomeScreen(
     var deviceProfile by remember { mutableStateOf("Balanced (6GB Profile)") }
 
     androidx.compose.runtime.LaunchedEffect(Unit) {
-        val nativeBridge = com.livehumanai.livehumanai.native.NativeBridge.getInstance()
+        val nativeBridge = com.livehumanai.livehumanai.nativebridge.NativeBridge.getInstance()
         if (nativeBridge.isInitialized) {
             runtimeStatus = nativeBridge.getRuntimeStatus()
             deviceProfile = nativeBridge.getDeviceProfile()

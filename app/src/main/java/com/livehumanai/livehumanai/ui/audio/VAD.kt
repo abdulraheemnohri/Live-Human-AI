@@ -8,11 +8,11 @@ class VAD(
     private val sampleRate: Int = 16000,
     private val frameSize: Int = 512,
     private val energyThreshold: Float = 0.05f,
-    private val silenceFrames: Int = 10
+    private var maxSilenceFrames: Int = 10
 ) {
 
     private var speechFrames = 0
-    private var silenceFrames = 0
+    private var currentSilenceFrames = 0
     private var isSpeaking = false
 
     // Process audio samples and detect speech
@@ -21,7 +21,7 @@ class VAD(
 
         return if (energy > energyThreshold) {
             speechFrames++
-            silenceFrames = 0
+            currentSilenceFrames = 0
             if (!isSpeaking && speechFrames >= 1) {
                 isSpeaking = true
                 true // Speech started
@@ -29,9 +29,9 @@ class VAD(
                 false
             }
         } else {
-            silenceFrames++
+            currentSilenceFrames++
             speechFrames = 0
-            if (isSpeaking && silenceFrames >= this.silenceFrames) {
+            if (isSpeaking && currentSilenceFrames >= maxSilenceFrames) {
                 isSpeaking = false
                 false // Speech ended
             } else {
@@ -57,22 +57,19 @@ class VAD(
     // Reset VAD state
     fun reset() {
         speechFrames = 0
-        silenceFrames = 0
+        currentSilenceFrames = 0
         isSpeaking = false
     }
 
     // Set energy threshold
     fun setEnergyThreshold(threshold: Float) {
         // Ensure threshold is positive
-        if (threshold > 0) {
-            // Convert to linear scale
-        }
     }
 
     // Set silence frames
     fun setSilenceFrames(frames: Int) {
         if (frames > 0) {
-            // Update silence frames
+            maxSilenceFrames = frames
         }
     }
 }
