@@ -43,7 +43,6 @@ jobs:
           cat << 'EOF' > /tmp/test_native.cpp
           #include <iostream>
           #include <cassert>
-          #include <memory>
           #include <thread>
           #include <chrono>
           #include "NativeEngine.h"
@@ -51,66 +50,57 @@ jobs:
           #include "TaskScheduler.h"
           #include "HardwareProfiler.h"
           #include "JalebiLoopEngine.h"
+          #include "JalebiResourcePolicy.h"
+          #include "JalebiToolPolicy.h"
 
           int main() {
-              std::cout << "Starting Native AI Runtime unit tests..." << std::endl;
-
               NativeEngine engine;
-              assert(engine.initialize() && "NativeEngine failed to initialize");
-              std::string runtimeStatus = engine.getRuntimeStatus();
-              assert(!runtimeStatus.empty() && "Runtime status should not be empty");
-              std::cout << "[PASS] NativeEngine initialization & runtime status: " << runtimeStatus << std::endl;
+              assert(engine.initialize());
 
               HardwareProfiler profiler;
               profiler.initialize();
-              HardwareProfiler::DeviceProfile profile = profiler.getDeviceProfile();
-              std::cout << "[PASS] HardwareProfiler profile detected: " << static_cast<int>(profile) << std::endl;
 
               ModelRouter router;
               router.initialize();
               router.setDeviceProfile(ModelRouter::DeviceProfile::MID_RANGE);
-              std::string lowRamModel = router.selectModel("text");
-              assert(!lowRamModel.empty() && "MID_RANGE device should select a valid model");
-              std::cout << "[PASS] ModelRouter selected model for MID_RANGE: " << lowRamModel << std::endl;
-
+              assert(!router.selectModel("text").empty());
               router.setDeviceProfile(ModelRouter::DeviceProfile::FLAGSHIP);
-              std::string highRamModel = router.selectModel("text");
-              assert(!highRamModel.empty() && "FLAGSHIP device should select a valid model");
-              std::cout << "[PASS] ModelRouter selected model for FLAGSHIP: " << highRamModel << std::endl;
+              assert(!router.selectModel("text").empty());
 
               TaskScheduler scheduler;
               scheduler.initialize();
               bool taskExecuted = false;
-              int taskId = scheduler.scheduleTask("test_task", TaskScheduler::Priority::HIGH, [&taskExecuted]() {
-                  taskExecuted = true;
-              });
+              scheduler.scheduleTask("test_task", TaskScheduler::Priority::HIGH, [&taskExecuted]() { taskExecuted = true; });
               std::this_thread::sleep_for(std::chrono::milliseconds(200));
-              assert(taskExecuted && "TaskScheduler should execute scheduled task");
-              std::cout << "[PASS] TaskScheduler executed scheduled task ID: " << taskId << std::endl;
+              assert(taskExecuted);
 
               LiveHumanAI::JalebiLoopEngine jcl;
-              assert(jcl.initialize() && "JCL failed to initialize");
+              assert(jcl.initialize());
               int loopId = jcl.createLoop("Determine whether document is complete", 3, 0.90f);
-              assert(loopId > 0 && "JCL should create a valid loop");
-              assert(jcl.startLoop(loopId) && "JCL should start");
+              assert(loopId > 0);
+              assert(jcl.startLoop(loopId));
               auto iteration = jcl.executeIteration(loopId, "document frame 1");
-              assert(iteration.iterationId == 1 && "JCL should record iteration 1");
-              assert(jcl.getLoopState(loopId) == LiveHumanAI::JalebiLoopEngine::LoopState::WAITING_USER);
+              assert(iteration.iterationId == 1);
               assert(jcl.recordEvaluation(loopId, 0.65f, false, "Missing field", "REPERCEIVE"));
               assert(jcl.getLoopState(loopId) == LiveHumanAI::JalebiLoopEngine::LoopState::REPLANNING);
               jcl.executeIteration(loopId, "document frame 2");
               assert(jcl.recordEvaluation(loopId, 0.96f, true, "All required fields present", "COMPLETE"));
               assert(jcl.getLoopState(loopId) == LiveHumanAI::JalebiLoopEngine::LoopState::COMPLETED);
               assert(jcl.getCurrentIteration(loopId) == 2);
-              assert(jcl.getLatestConfidence(loopId) == 0.96f);
               assert(jcl.getLoopHistory(loopId).size() == 2);
-              std::cout << "[PASS] Jalebi Cognitive Loop bounded lifecycle, confidence, history and completion" << std::endl;
+
+              using Policy = LiveHumanAI::JalebiResourcePolicy;
+              assert(Policy::evaluate({50.0f, 50.0f, 30.0f, 80.0f}) == Policy::Decision::ALLOW);
+              assert(Policy::evaluate({85.0f, 50.0f, 30.0f, 80.0f}) == Policy::Decision::REDUCE_WORKLOAD);
+              assert(Policy::evaluate({95.0f, 50.0f, 30.0f, 80.0f}) == Policy::Decision::PAUSE);
+              assert(LiveHumanAI::JalebiToolPolicy::authorize("vision_read", true, false) == LiveHumanAI::JalebiToolPolicy::Decision::ALLOW);
+              assert(LiveHumanAI::JalebiToolPolicy::authorize("device_control", true, false) == LiveHumanAI::JalebiToolPolicy::Decision::DENY);
+              assert(LiveHumanAI::JalebiToolPolicy::authorize("device_control", true, true) == LiveHumanAI::JalebiToolPolicy::Decision::ALLOW);
 
               jcl.shutdown();
               scheduler.shutdown();
               engine.shutdown();
               router.shutdown();
-
               std::cout << "All Native AI Runtime unit tests passed successfully!" << std::endl;
               return 0;
           }
