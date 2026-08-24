@@ -5,6 +5,7 @@
 #include <cmath>
 #include <iomanip>
 #include <sstream>
+#include <utility>
 
 namespace LiveHumanAI {
 
@@ -43,17 +44,12 @@ void JalebiLoopEngine::shutdown() {
     m_initialized = false;
 }
 
-int JalebiLoopEngine::createLoop(
-    const std::string& goal,
-    int maxIterations,
-    float successConfidence
-) {
+int JalebiLoopEngine::createLoop(const std::string& goal, int maxIterations, float successConfidence) {
     std::lock_guard<std::mutex> lock(m_mutex);
     if (!m_initialized) return 0;
 
     const int id = m_nextLoopId++;
     const long long timestamp = nowMs();
-
     LoopContext context;
     context.goal.id = id;
     context.goal.description = goal;
@@ -62,7 +58,6 @@ int JalebiLoopEngine::createLoop(
     context.state = LoopState::INITIALIZING;
     context.createdAtMs = timestamp;
     context.updatedAtMs = timestamp;
-
     m_loops.emplace(id, std::move(context));
     return id;
 }
@@ -71,11 +66,8 @@ bool JalebiLoopEngine::startLoop(int loopId) {
     std::lock_guard<std::mutex> lock(m_mutex);
     auto it = m_loops.find(loopId);
     if (it == m_loops.end()) return false;
-
     LoopContext& loop = it->second;
-    if (loop.state != LoopState::INITIALIZING && loop.state != LoopState::PAUSED) {
-        return false;
-    }
+    if (loop.state != LoopState::INITIALIZING && loop.state != LoopState::PAUSED) return false;
     loop.state = LoopState::PERCEIVING;
     loop.updatedAtMs = nowMs();
     return true;
@@ -85,10 +77,8 @@ bool JalebiLoopEngine::pauseLoop(int loopId) {
     std::lock_guard<std::mutex> lock(m_mutex);
     auto it = m_loops.find(loopId);
     if (it == m_loops.end()) return false;
-
     LoopContext& loop = it->second;
-    if (loop.state == LoopState::COMPLETED || loop.state == LoopState::FAILED ||
-        loop.state == LoopState::CANCELLED) return false;
+    if (loop.state == LoopState::COMPLETED || loop.state == LoopState::FAILED || loop.state == LoopState::CANCELLED) return false;
     loop.state = LoopState::PAUSED;
     loop.updatedAtMs = nowMs();
     return true;
@@ -117,6 +107,7 @@ bool JalebiLoopEngine::completeLoop(int loopId) {
     std::lock_guard<std::mutex> lock(m_mutex);
     auto it = m_loops.find(loopId);
     if (it == m_loops.end()) return false;
+    if (it->second.state == LoopState::CANCELLED || it->second.state == LoopState::FAILED) return false;
     it->second.state = LoopState::COMPLETED;
     it->second.updatedAtMs = nowMs();
     return true;
@@ -126,32 +117,22 @@ bool JalebiLoopEngine::failLoop(int loopId, const std::string& reason) {
     std::lock_guard<std::mutex> lock(m_mutex);
     auto it = m_loops.find(loopId);
     if (it == m_loops.end()) return false;
-
     LoopContext& loop = it->second;
+    if (loop.state == LoopState::COMPLETED || loop.state == LoopState::CANCELLED) return false;
     loop.state = LoopState::FAILED;
     loop.updatedAtMs = nowMs();
-    if (!loop.history.empty() && !reason.empty()) {
-        loop.history.back().errors.push_back(reason);
-    }
+    if (!loop.history.empty() && !reason.empty()) loop.history.back().errors.push_back(reason);
     return true;
 }
 
-JalebiLoopEngine::Iteration JalebiLoopEngine::executeIteration(
-    int loopId,
-    const std::string& currentInput
-) {
+JalebiLoopEngine::Iteration JalebiLoopEngine::executeIteration(int loopId, const std::string& currentInput) {
     std::lock_guard<std::mutex> lock(m_mutex);
     Iteration iteration;
-
     auto it = m_loops.find(loopId);
     if (it == m_loops.end()) return iteration;
 
     LoopContext& loop = it->second;
-    if (loop.state == LoopState::PAUSED || loop.state == LoopState::CANCELLED ||
-        loop.state == LoopState::COMPLETED || loop.state == LoopState::FAILED) {
-        return iteration;
-    }
-
+    if (loop.state == LoopState::PAUSED || loop.state == LoopState::CANCELLED || loop.state == LoopState::COMPLETED || loop.state == LoopState::FAILED) return iteration;
     if (loop.currentIteration >= loop.goal.maxIterations) {
         loop.state = LoopState::RESOURCE_LIMIT;
         loop.updatedAtMs = nowMs();
@@ -161,7 +142,6 @@ JalebiLoopEngine::Iteration JalebiLoopEngine::executeIteration(
     iteration.iterationId = ++loop.currentIteration;
     iteration.timestamp = nowMs();
     iteration.input = currentInput;
-
     loop.state = LoopState::PERCEIVING;
     iteration.perception = currentInput.empty() ? "No input supplied" : "Input received";
     loop.state = LoopState::INTERPRETING;
@@ -178,32 +158,21 @@ JalebiLoopEngine::Iteration JalebiLoopEngine::executeIteration(
     iteration.evaluation = "Awaiting external evaluation evidence";
     iteration.confidence = 0.0f;
     iteration.nextAction = "EVALUATE";
-
     loop.history.push_back(iteration);
     loop.state = LoopState::WAITING_USER;
     loop.updatedAtMs = nowMs();
     return iteration;
 }
 
-bool JalebiLoopEngine::recordEvaluation(
-    int loopId,
-    float confidence,
-    bool goalCompleted,
-    const std::string& evaluation,
-    const std::string& nextAction,
-    const std::string& memoryUpdates
-) {
+bool JalebiLoopEngine::recordEvaluation(int loopId, float confidence, bool goalCompleted, const std::string& evaluation, const std::string& nextAction, const std::string& memoryUpdates) {
     std::lock_guard<std::mutex> lock(m_mutex);
     auto it = m_loops.find(loopId);
     if (it == m_loops.end() || it->second.history.empty()) return false;
-
     LoopContext& loop = it->second;
-    if (loop.state == LoopState::CANCELLED || loop.state == LoopState::FAILED ||
-        loop.state == LoopState::COMPLETED) return false;
+    if (loop.state == LoopState::CANCELLED || loop.state == LoopState::FAILED || loop.state == LoopState::COMPLETED) return false;
 
     const float safeConfidence = clampConfidence(confidence);
     loop.confidence = safeConfidence;
-
     Iteration& iteration = loop.history.back();
     iteration.confidence = safeConfidence;
     iteration.evaluation = evaluation;
@@ -220,7 +189,6 @@ bool JalebiLoopEngine::recordEvaluation(
     } else {
         loop.state = LoopState::WAITING_USER;
     }
-
     loop.updatedAtMs = nowMs();
     return true;
 }
@@ -255,7 +223,6 @@ JalebiLoopEngine::LoopSnapshot JalebiLoopEngine::getSnapshot(int loopId) const {
     snapshot.loopId = loopId;
     auto it = m_loops.find(loopId);
     if (it == m_loops.end()) return snapshot;
-
     snapshot.goal = it->second.goal;
     snapshot.state = it->second.state;
     snapshot.currentIteration = it->second.currentIteration;
