@@ -42,6 +42,10 @@ class AIViewModel @Inject constructor(
     private val _loadedModels = MutableStateFlow<List<String>>(emptyList())
     val loadedModels: StateFlow<List<String>> = _loadedModels.asStateFlow()
 
+    // State for Jalebi Cognitive Loop (JCL)
+    private val _jclState = MutableStateFlow<String>("IDLE")
+    val jclState: StateFlow<String> = _jclState.asStateFlow()
+
     init {
         // Initialize the native runtime
         if (!aiRepository.initialize()) {
@@ -97,6 +101,18 @@ class AIViewModel @Inject constructor(
     fun stopGeneration() {
         aiRepository.stopGeneration()
         _aiState.value = AIState.Idle
+    }
+
+    // Jalebi Cognitive Loop (JCL) operations
+
+    fun startJalebiLoop(goal: String, maxIterations: Int = 8) {
+        viewModelScope.launch {
+            val bridge = com.livehumanai.livehumanai.nativebridge.NativeBridge.getInstance()
+            if (bridge.isInitialized) {
+                val loopId = bridge.createJalebiLoop(goal, maxIterations)
+                _jclState.value = bridge.getJalebiLoopState(loopId)
+            }
+        }
     }
 
     // Conversation operations

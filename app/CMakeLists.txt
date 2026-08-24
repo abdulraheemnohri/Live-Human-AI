@@ -57,6 +57,7 @@ add_library(
     
     # AI
     src/main/cpp/ai/AIEngine.cpp
+    src/main/cpp/ai/JalebiLoopEngine.cpp
     src/main/cpp/ai/ModelRouter.cpp
     src/main/cpp/ai/llm/LLMManager.cpp
     src/main/cpp/ai/stt/STTManager.cpp
