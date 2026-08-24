@@ -1,7 +1,7 @@
 package com.livehumanai.livehumanai
 
 import android.app.Application
-import com.livehumanai.livehumanai.native.NativeBridge
+import com.livehumanai.livehumanai.nativebridge.NativeBridge
 
 /**
  * LiveHumanAIApp is the main Application class for the Live Human AI app.

@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.livehumanai.livehumanai.ui.theme.LiveHumanAITheme
 
 /**
  * DiagnosticsScreen provides diagnostic tests for the app's features.
@@ -52,7 +53,7 @@ fun DiagnosticsScreen() {
             style = MaterialTheme.typography.headlineMedium
         )
 
-        val nativeBridge = com.livehumanai.livehumanai.native.NativeBridge.getInstance()
+        val nativeBridge = com.livehumanai.livehumanai.nativebridge.NativeBridge.getInstance()
 
         // Test all button
         Button(

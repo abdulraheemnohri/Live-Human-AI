@@ -2,6 +2,7 @@ package com.livehumanai.livehumanai.utils
 
 import android.content.Context
 import android.os.Environment
+import android.os.StatFs
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -130,7 +131,7 @@ object FileUtils {
     // Get available storage space
     fun getAvailableStorageSpace(): Long {
         return try {
-            val stat = Environment.getDataDirectory().statFs
+            val stat = StatFs(Environment.getDataDirectory().path)
             stat.availableBytes
         } catch (e: Exception) {
             0
@@ -140,7 +141,7 @@ object FileUtils {
     // Get total storage space
     fun getTotalStorageSpace(): Long {
         return try {
-            val stat = Environment.getDataDirectory().statFs
+            val stat = StatFs(Environment.getDataDirectory().path)
             stat.totalBytes
         } catch (e: Exception) {
             0

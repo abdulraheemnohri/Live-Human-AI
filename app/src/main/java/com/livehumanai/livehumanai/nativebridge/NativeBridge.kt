@@ -1,4 +1,4 @@
-package com.livehumanai.livehumanai.native
+package com.livehumanai.livehumanai.nativebridge
 
 /**
  * NativeBridge provides the Kotlin interface to the native C++ code.
@@ -7,11 +7,27 @@ package com.livehumanai.livehumanai.native
 class NativeBridge {
 
     companion object {
-        // Load the native library
+        private var instance: NativeBridge? = null
+
+        @JvmStatic
+        fun getInstance(): NativeBridge {
+            if (instance == null) {
+                instance = NativeBridge()
+            }
+            return instance!!
+        }
+
         init {
-            System.loadLibrary("native-core")
+            try {
+                System.loadLibrary("native-core")
+            } catch (e: UnsatisfiedLinkError) {
+                // Fallback for tests or environments where native library is not loaded
+            }
         }
     }
+
+    val isInitialized: Boolean
+        get() = nativeHandle != 0L
 
     // Native handle to the NativeCore instance
     private var nativeHandle: Long = 0

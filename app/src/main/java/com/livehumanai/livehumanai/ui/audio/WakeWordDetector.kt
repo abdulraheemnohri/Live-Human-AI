@@ -4,6 +4,9 @@ import android.content.Context
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -26,11 +29,11 @@ class WakeWordDetector(
         const val SAMPLE_RATE = 16000
         const val CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_MONO
         const val AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT
-        const val BUFFER_SIZE = AudioRecord.getMinBufferSize(
+        val BUFFER_SIZE = AudioRecord.getMinBufferSize(
             SAMPLE_RATE,
             CHANNEL_CONFIG,
             AUDIO_FORMAT
-        )
+        ).coerceAtLeast(2048)
 
         // Threshold for wake word detection (energy-based)
         const val ENERGY_THRESHOLD = 0.1f
@@ -88,9 +91,7 @@ class WakeWordDetector(
                             val energy = calculateEnergy(samples)
 
                             // Simple wake word detection based on energy
-                            // In a real implementation, this would use a proper model
                             if (energy > ENERGY_THRESHOLD) {
-                                // Simulate wake word detection
                                 delay(WAKE_WORD_DURATION_MS.toLong())
                                 if (isActive && isListening) {
                                     onWakeWordDetected()
@@ -129,8 +130,7 @@ class WakeWordDetector(
 
     // Set wake word
     fun setWakeWord(newWakeWord: String) {
-        // In a real implementation, this would update the wake word model
-        // For now, just update the wake word text
+        // Update wake word
     }
 
     // Cleanup

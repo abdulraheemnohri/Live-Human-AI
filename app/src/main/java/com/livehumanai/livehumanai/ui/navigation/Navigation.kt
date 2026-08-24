@@ -3,14 +3,18 @@ package com.livehumanai.livehumanai.ui.navigation
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Videocam
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -130,6 +134,7 @@ data class BottomNavItem(
 /**
  * TopNavigationBar provides a top navigation bar with back button and title.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TopNavigationBar(
     title: String,
@@ -137,14 +142,14 @@ fun TopNavigationBar(
     onBack: (() -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {}
 ) {
-    androidx.compose.material3.TopAppBar(
+    TopAppBar(
         title = { Text(title) },
         modifier = modifier,
         navigationIcon = {
             if (onBack != null) {
-                androidx.compose.material3.IconButton(onClick = onBack) {
+                IconButton(onClick = onBack) {
                     Icon(
-                        imageVector = Icons.Default.ArrowBack,
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back"
                     )
                 }

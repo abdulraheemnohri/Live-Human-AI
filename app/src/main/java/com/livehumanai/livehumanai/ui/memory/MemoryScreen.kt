@@ -32,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.livehumanai.livehumanai.ui.theme.LiveHumanAITheme
 
 /**
  * MemoryScreen provides an interface for viewing and managing AI memories.

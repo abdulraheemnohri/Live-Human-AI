@@ -67,15 +67,16 @@ class AIViewModel @Inject constructor(
     fun generateResponse(
         prompt: String,
         conversationId: Long? = null,
-        modelName: String = "",
-        temperature: Float = settingsRepository.getTemperature(),
-        maxTokens: Int = settingsRepository.getMaxTokens()
+        modelName: String = ""
     ) {
         viewModelScope.launch {
             try {
                 _aiState.value = AIState.Thinking
 
-                val response = aiRepository.generate(prompt, modelName, temperature, maxTokens)
+                val temp = settingsRepository.getTemperature()
+                val tokens = settingsRepository.getMaxTokens()
+
+                val response = aiRepository.generate(prompt, modelName, temp, tokens)
 
                 // Save to conversation if provided
                 conversationId?.let { id ->
@@ -168,10 +169,10 @@ class AIViewModel @Inject constructor(
         settingsRepository.setPerformanceMode(mode)
         // Update native performance mode
         val nativeMode = when (mode) {
-            "Battery Saver" -> com.livehumanai.livehumanai.native.NativeBridge.PerformanceMode.BATTERY_SAVER
-            "Performance" -> com.livehumanai.livehumanai.native.NativeBridge.PerformanceMode.PERFORMANCE
-            "Maximum" -> com.livehumanai.livehumanai.native.NativeBridge.PerformanceMode.MAXIMUM
-            else -> com.livehumanai.livehumanai.native.NativeBridge.PerformanceMode.BALANCED
+            "Battery Saver" -> com.livehumanai.livehumanai.nativebridge.NativeBridge.PerformanceMode.BATTERY_SAVER
+            "Performance" -> com.livehumanai.livehumanai.nativebridge.NativeBridge.PerformanceMode.PERFORMANCE
+            "Maximum" -> com.livehumanai.livehumanai.nativebridge.NativeBridge.PerformanceMode.MAXIMUM
+            else -> com.livehumanai.livehumanai.nativebridge.NativeBridge.PerformanceMode.BALANCED
         }
         aiRepository.setPerformanceMode(nativeMode)
     }

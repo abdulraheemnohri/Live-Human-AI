@@ -39,6 +39,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import com.livehumanai.livehumanai.ui.theme.LiveHumanAITheme
 
 /**
  * CameraScreen provides a camera interface for capturing images and videos.

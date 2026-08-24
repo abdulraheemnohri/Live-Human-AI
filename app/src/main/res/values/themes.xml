@@ -28,7 +28,6 @@
 
         <!-- Background colors -->
         <item name="android:colorBackground">@color/md_ref_pal_background</item>
-        <item name="colorBackground">@color/md_ref_pal_background</item>
         <item name="colorSurface">@color/md_ref_pal_surface</item>
         <item name="colorSurfaceVariant">@color/md_ref_pal_surface_variant</item>
         <item name="colorOnBackground">@color/md_ref_pal_on_background</item>
@@ -38,41 +37,6 @@
         <!-- Outline colors -->
         <item name="colorOutline">@color/md_ref_pal_outline</item>
         <item name="colorOutlineVariant">@color/md_ref_pal_outline_variant</item>
-
-        <!-- Shadow and scrim -->
-        <item name="colorShadow">@color/md_ref_pal_shadow</item>
-        <item name="colorScrim">@color/md_ref_pal_scrim</item>
-
-        <!-- Inverse colors -->
-        <item name="colorInverseSurface">@color/md_ref_pal_inverse_surface</item>
-        <item name="colorInverseOnSurface">@color/md_ref_pal_inverse_on_surface</item>
-        <item name="colorInversePrimary">@color/md_ref_pal_inverse_primary</item>
-
-        <!-- Surface colors for elevated surfaces -->
-        <item name="colorSurfaceContainer">@color/md_ref_pal_surface_container</item>
-        <item name="colorSurfaceContainerHigh">@color/md_ref_pal_surface_container_high</item>
-        <item name="colorSurfaceContainerHighest">@color/md_ref_pal_surface_container_highest</item>
-        <item name="colorSurfaceContainerLow">@color/md_ref_pal_surface_container_low</item>
-        <item name="colorSurfaceContainerLower">@color/md_ref_pal_surface_container_lower</item>
-        <item name="colorSurfaceContainerLowest">@color/md_ref_pal_surface_container_lowest</item>
-
-        <!-- Custom colors -->
-        <item name="colorSuccess">@color/color_success</item>
-        <item name="colorWarning">@color/color_warning</item>
-        <item name="colorInfo">@color/color_info</item>
-
-        <!-- AI state colors -->
-        <item name="colorAiIdle">@color/color_ai_idle</item>
-        <item name="colorAiListening">@color/color_ai_listening</item>
-        <item name="colorAiThinking">@color/color_ai_thinking</item>
-        <item name="colorAiSpeaking">@color/color_ai_speaking</item>
-        <item name="colorAiError">@color/color_ai_error</item>
-
-        <!-- Thermal state colors -->
-        <item name="colorThermalNormal">@color/color_thermal_normal</item>
-        <item name="colorThermalWarm">@color/color_thermal_warm</item>
-        <item name="colorThermalHot">@color/color_thermal_hot</item>
-        <item name="colorThermalCritical">@color/color_thermal_critical</item>
     </style>
 
     <!-- Material 3 Dark Theme -->
@@ -103,7 +67,6 @@
 
         <!-- Background colors -->
         <item name="android:colorBackground">@color/md_ref_pal_surface</item>
-        <item name="colorBackground">@color/md_ref_pal_surface</item>
         <item name="colorSurface">@color/md_ref_pal_surface</item>
         <item name="colorSurfaceVariant">@color/md_ref_pal_surface_variant</item>
         <item name="colorOnBackground">@color/md_ref_pal_on_surface</item>
@@ -113,23 +76,5 @@
         <!-- Outline colors -->
         <item name="colorOutline">@color/md_ref_pal_outline</item>
         <item name="colorOutlineVariant">@color/md_ref_pal_outline_variant</item>
-
-        <!-- Shadow and scrim -->
-        <item name="colorShadow">@color/md_ref_pal_shadow</item>
-        <item name="colorScrim">@color/md_ref_pal_scrim</item>
-
-        <!-- Inverse colors -->
-        <item name="colorInverseSurface">@color/md_ref_pal_inverse_surface</item>
-        <item name="colorInverseOnSurface">@color/md_ref_pal_inverse_on_surface</item>
-        <item name="colorInversePrimary">@color/md_ref_pal_inverse_primary</item>
     </style>
-
-    <!-- Additional surface container colors for Material 3 -->
-    <color name="md_ref_pal_surface_container">#FFF3EDF7</color>
-    <color name="md_ref_pal_surface_container_high">#FFE8DEF4</color>
-    <color name="md_ref_pal_surface_container_highest">#FFE3D5E8</color>
-    <color name="md_ref_pal_surface_container_low">#FFFFFFFF</color>
-    <color name="md_ref_pal_surface_container_lower">#FFFFFFFF</color>
-    <color name="md_ref_pal_surface_container_lowest">#FFFFFFFF</color>
-    <color name="md_ref_pal_on_primary">#FFFFFFFF</color>
 </resources>

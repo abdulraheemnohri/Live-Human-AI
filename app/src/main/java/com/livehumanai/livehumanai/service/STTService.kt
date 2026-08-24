@@ -7,9 +7,13 @@ import android.os.IBinder
 import com.livehumanai.livehumanai.data.repository.AIRepository
 import com.livehumanai.livehumanai.data.repository.SettingsRepository
 import dagger.hilt.android.AndroidEntryPoint
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -29,7 +33,8 @@ class STTService : Service() {
 
     private val binder = STTServiceBinder()
     private var recognitionJob: Job? = null
-    private var isRecognizing by mutableStateOf(false)
+    var isRecognizing by mutableStateOf(false)
+        private set
 
     // Callback for recognition results
     private var recognitionCallback: ((String) -> Unit)? = null
@@ -106,8 +111,4 @@ class STTService : Service() {
         return settingsRepository.getSTTModel()
     }
 
-    // Check if recognition is active
-    fun isRecognizing(): Boolean {
-        return isRecognizing
-    }
 }

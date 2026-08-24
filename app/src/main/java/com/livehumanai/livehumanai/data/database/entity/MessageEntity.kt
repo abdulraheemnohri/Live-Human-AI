@@ -5,6 +5,7 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import androidx.room.TypeConverters
+import com.livehumanai.livehumanai.data.database.Converters
 import java.util.Date
 
 /**

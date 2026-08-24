@@ -7,9 +7,13 @@ import android.os.IBinder
 import com.livehumanai.livehumanai.data.repository.AIRepository
 import com.livehumanai.livehumanai.data.repository.SettingsRepository
 import dagger.hilt.android.AndroidEntryPoint
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -29,7 +33,8 @@ class TTSService : Service() {
 
     private val binder = TTSServiceBinder()
     private var synthesisJob: Job? = null
-    private var isSynthesizing by mutableStateOf(false)
+    var isSynthesizing by mutableStateOf(false)
+        private set
 
     // Callback for synthesis progress
     private var synthesisCallback: ((ByteArray) -> Unit)? = null
@@ -137,8 +142,4 @@ class TTSService : Service() {
         return settingsRepository.getSpeechPitch()
     }
 
-    // Check if synthesis is active
-    fun isSynthesizing(): Boolean {
-        return isSynthesizing
-    }
 }

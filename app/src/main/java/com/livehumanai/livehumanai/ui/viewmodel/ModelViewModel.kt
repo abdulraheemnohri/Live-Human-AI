@@ -2,6 +2,7 @@ package com.livehumanai.livehumanai.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.livehumanai.livehumanai.data.database.entity.ModelEntity
 import com.livehumanai.livehumanai.data.repository.AIRepository
 import com.livehumanai.livehumanai.data.repository.ModelRepository
 import com.livehumanai.livehumanai.data.repository.SettingsRepository
@@ -53,8 +54,8 @@ class ModelViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val models = modelRepository.getAllModels()
-                _models.value = models.map { model ->
+                val modelsList = modelRepository.getAllModels()
+                _models.value = modelsList.map { model ->
                     ModelState(
                         name = model.name,
                         type = model.type,
@@ -81,8 +82,8 @@ class ModelViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val models = modelRepository.getInstalledModels()
-                _installedModels.value = models.map { model ->
+                val modelsList = modelRepository.getInstalledModels()
+                _installedModels.value = modelsList.map { model ->
                     ModelState(
                         name = model.name,
                         type = model.type,
@@ -183,7 +184,7 @@ class ModelViewModel @Inject constructor(
 
     // Utility functions
 
-    fun getRecommendedModels(): List<ModelState> {
+    suspend fun getRecommendedModels(): List<ModelState> {
         val deviceProfile = aiRepository.getDeviceProfile()
         return modelRepository.getRecommendedModels(deviceProfile).map { model ->
             ModelState(
@@ -202,11 +203,11 @@ class ModelViewModel @Inject constructor(
         }
     }
 
-    fun getModelsByType(type: ModelType): List<ModelState> {
+    fun getModelsByType(type: ModelEntity.ModelType): List<ModelState> {
         return _models.value.filter { it.type == type }
     }
 
-    fun getInstalledModelsByType(type: ModelType): List<ModelState> {
+    fun getInstalledModelsByType(type: ModelEntity.ModelType): List<ModelState> {
         return _installedModels.value.filter { it.type == type }
     }
 
@@ -225,7 +226,7 @@ class ModelViewModel @Inject constructor(
 
     data class ModelState(
         val name: String,
-        val type: ModelType,
+        val type: ModelEntity.ModelType,
         val version: String,
         val size: Long,
         val format: String,
@@ -235,16 +236,5 @@ class ModelViewModel @Inject constructor(
         val source: String,
         val isInstalled: Boolean,
         val isLoaded: Boolean
-    ) {
-        val sizeFormatted: String get() = aiRepository.formatBytes(size)
-        val ramRequirementFormatted: String get() = aiRepository.formatBytes(ramRequirement)
-    }
-
-    enum class ModelType {
-        LLM,
-        STT,
-        TTS,
-        VISION,
-        EMBEDDING
-    }
+    )
 }
