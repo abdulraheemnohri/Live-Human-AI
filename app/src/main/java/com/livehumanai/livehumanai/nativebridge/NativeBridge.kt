@@ -200,6 +200,16 @@ class NativeBridge {
         return PerformanceMode.values()[nativeGetPerformanceMode(nativeHandle)]
     }
 
+    // Jalebi Cognitive Loop (JCL) functions
+
+    fun createJalebiLoop(goal: String, maxIterations: Int = 8): Int {
+        return nativeCreateJalebiLoop(goal, maxIterations)
+    }
+
+    fun getJalebiLoopState(loopId: Int): String {
+        return nativeGetJalebiLoopState(loopId)
+    }
+
     // Native methods (declared in JNIBridge.h and implemented in JNIBridge.cpp)
     private external fun nativeInitialize(): Long
     private external fun nativeShutdown(nativeHandle: Long)
@@ -240,4 +250,7 @@ class NativeBridge {
     )
 
     private external fun nativeGetPerformanceMode(nativeHandle: Long): Int
+
+    private external fun nativeCreateJalebiLoop(goal: String, maxIterations: Int): Int
+    private external fun nativeGetJalebiLoopState(loopId: Int): String
 }
