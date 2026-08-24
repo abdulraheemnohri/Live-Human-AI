@@ -2,7 +2,7 @@ name: Test and Find Errors
 
 on:
   push:
-    branches: [ main, master, "jules-*" ]
+    branches: [ main, master, "jules-*", "feature/**" ]
   pull_request:
     branches: [ main, master ]
   workflow_dispatch:
@@ -50,6 +50,7 @@ jobs:
           #include "ModelRouter.h"
           #include "TaskScheduler.h"
           #include "HardwareProfiler.h"
+          #include "JalebiLoopEngine.h"
 
           int main() {
               std::cout << "Starting Native AI Runtime unit tests..." << std::endl;
@@ -83,11 +84,29 @@ jobs:
               int taskId = scheduler.scheduleTask("test_task", TaskScheduler::Priority::HIGH, [&taskExecuted]() {
                   taskExecuted = true;
               });
-
               std::this_thread::sleep_for(std::chrono::milliseconds(200));
               assert(taskExecuted && "TaskScheduler should execute scheduled task");
               std::cout << "[PASS] TaskScheduler executed scheduled task ID: " << taskId << std::endl;
 
+              LiveHumanAI::JalebiLoopEngine jcl;
+              assert(jcl.initialize() && "JCL failed to initialize");
+              int loopId = jcl.createLoop("Determine whether document is complete", 3, 0.90f);
+              assert(loopId > 0 && "JCL should create a valid loop");
+              assert(jcl.startLoop(loopId) && "JCL should start");
+              auto iteration = jcl.executeIteration(loopId, "document frame 1");
+              assert(iteration.iterationId == 1 && "JCL should record iteration 1");
+              assert(jcl.getLoopState(loopId) == LiveHumanAI::JalebiLoopEngine::LoopState::WAITING_USER);
+              assert(jcl.recordEvaluation(loopId, 0.65f, false, "Missing field", "REPERCEIVE"));
+              assert(jcl.getLoopState(loopId) == LiveHumanAI::JalebiLoopEngine::LoopState::REPLANNING);
+              jcl.executeIteration(loopId, "document frame 2");
+              assert(jcl.recordEvaluation(loopId, 0.96f, true, "All required fields present", "COMPLETE"));
+              assert(jcl.getLoopState(loopId) == LiveHumanAI::JalebiLoopEngine::LoopState::COMPLETED);
+              assert(jcl.getCurrentIteration(loopId) == 2);
+              assert(jcl.getLatestConfidence(loopId) == 0.96f);
+              assert(jcl.getLoopHistory(loopId).size() == 2);
+              std::cout << "[PASS] Jalebi Cognitive Loop bounded lifecycle, confidence, history and completion" << std::endl;
+
+              jcl.shutdown();
               scheduler.shutdown();
               engine.shutdown();
               router.shutdown();
@@ -97,7 +116,7 @@ jobs:
           }
           EOF
 
-          g++ -std=c++17 -I /tmp -I app/src/main/cpp -I app/src/main/cpp/core -I app/src/main/cpp/ai -I app/src/main/cpp/ai/llm -I app/src/main/cpp/ai/stt -I app/src/main/cpp/ai/tts -I app/src/main/cpp/ai/vision -I app/src/main/cpp/audio -I app/src/main/cpp/memory -I app/src/main/cpp/hardware -I app/src/main/cpp/scheduler -I app/src/main/cpp/security -I app/src/main/cpp/jni -I app/src/main/cpp/utils /tmp/test_native.cpp app/src/main/cpp/core/NativeCore.cpp app/src/main/cpp/core/NativeEngine.cpp app/src/main/cpp/ai/AIEngine.cpp app/src/main/cpp/ai/ModelRouter.cpp app/src/main/cpp/ai/llm/LLMManager.cpp app/src/main/cpp/ai/stt/STTManager.cpp app/src/main/cpp/ai/tts/TTSManager.cpp app/src/main/cpp/ai/vision/VisionManager.cpp app/src/main/cpp/hardware/HardwareProfiler.cpp app/src/main/cpp/hardware/ThermalMonitor.cpp app/src/main/cpp/hardware/BatteryMonitor.cpp app/src/main/cpp/scheduler/TaskScheduler.cpp app/src/main/cpp/utils/Logger.cpp -o /tmp/test_native_runner -lpthread
+          g++ -std=c++17 -I /tmp -I app/src/main/cpp -I app/src/main/cpp/core -I app/src/main/cpp/ai -I app/src/main/cpp/ai/llm -I app/src/main/cpp/ai/stt -I app/src/main/cpp/ai/tts -I app/src/main/cpp/ai/vision -I app/src/main/cpp/audio -I app/src/main/cpp/memory -I app/src/main/cpp/hardware -I app/src/main/cpp/scheduler -I app/src/main/cpp/security -I app/src/main/cpp/jni -I app/src/main/cpp/utils /tmp/test_native.cpp app/src/main/cpp/core/NativeCore.cpp app/src/main/cpp/core/NativeEngine.cpp app/src/main/cpp/ai/AIEngine.cpp app/src/main/cpp/ai/JalebiLoopEngine.cpp app/src/main/cpp/ai/ModelRouter.cpp app/src/main/cpp/ai/llm/LLMManager.cpp app/src/main/cpp/ai/stt/STTManager.cpp app/src/main/cpp/ai/tts/TTSManager.cpp app/src/main/cpp/ai/vision/VisionManager.cpp app/src/main/cpp/hardware/HardwareProfiler.cpp app/src/main/cpp/hardware/ThermalMonitor.cpp app/src/main/cpp/hardware/BatteryMonitor.cpp app/src/main/cpp/scheduler/TaskScheduler.cpp app/src/main/cpp/utils/Logger.cpp -o /tmp/test_native_runner -lpthread
           /tmp/test_native_runner
 
       - name: Make Gradle Wrapper Executable
