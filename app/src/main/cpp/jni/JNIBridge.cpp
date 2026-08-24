@@ -1,5 +1,7 @@
 #include "JNIBridge.h"
 #include "../core/NativeCore.h"
+#include "../core/NativeEngine.h"
+#include "../ai/AIEngine.h"
 #include "../ai/JalebiLoopEngine.h"
 #include <string>
 

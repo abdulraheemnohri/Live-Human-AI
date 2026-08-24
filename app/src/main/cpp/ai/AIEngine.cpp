@@ -1,8 +1,8 @@
 #include "AIEngine.h"
-#include "LLMManager.h"
-#include "STTManager.h"
-#include "TTSManager.h"
-#include "VisionManager.h"
+#include "llm/LLMManager.h"
+#include "stt/STTManager.h"
+#include "tts/TTSManager.h"
+#include "vision/VisionManager.h"
 #include "ModelRouter.h"
 
 AIEngine::AIEngine()

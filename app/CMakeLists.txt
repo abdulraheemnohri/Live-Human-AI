@@ -63,14 +63,6 @@ add_library(
     src/main/cpp/ai/tts/TTSManager.cpp
     src/main/cpp/ai/vision/VisionManager.cpp
     
-    # Audio
-    src/main/cpp/audio/AudioProcessor.cpp
-    src/main/cpp/audio/WakeWordDetector.cpp
-    src/main/cpp/audio/VAD.cpp
-    
-    # Memory
-    src/main/cpp/memory/MemoryManager.cpp
-    
     # Hardware
     src/main/cpp/hardware/HardwareProfiler.cpp
     src/main/cpp/hardware/ThermalMonitor.cpp
@@ -79,15 +71,11 @@ add_library(
     # Scheduler
     src/main/cpp/scheduler/TaskScheduler.cpp
     
-    # Security
-    src/main/cpp/security/SecurityUtils.cpp
-    
     # JNI
     src/main/cpp/jni/JNIBridge.cpp
     
     # Utils
     src/main/cpp/utils/Logger.cpp
-    src/main/cpp/utils/Utils.cpp
 )
 
 # Include all header files
@@ -120,8 +108,7 @@ target_link_libraries(
     # OpenCV (Optional)
     # ${OpenCV_LIBS}
     
-    # Threading
-    pthread
+    # Threading is built into bionic libc on Android
 )
 
 # Platform-specific linker flags

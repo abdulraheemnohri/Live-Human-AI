@@ -19,6 +19,8 @@ build/
 # Android build outputs
 app/build/
 app/.externalNativeBuild/
+app/.cxx/
+.cxx/
 
 # CMake
 CMakeFiles/
