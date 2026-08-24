@@ -1,8 +1,9 @@
 package com.livehumanai.livehumanai.nativebridge
 
 /**
- * NativeBridge provides the Kotlin interface to the native C++ code.
- * This class loads the native library and provides methods to interact with the native runtime.
+ * Kotlin interface to the Live Human AI native runtime.
+ * JCL is intentionally exposed as a bounded, inspectable lifecycle rather than
+ * an unrestricted autonomous agent.
  */
 class NativeBridge {
 
@@ -11,17 +12,15 @@ class NativeBridge {
 
         @JvmStatic
         fun getInstance(): NativeBridge {
-            if (instance == null) {
-                instance = NativeBridge()
-            }
+            if (instance == null) instance = NativeBridge()
             return instance!!
         }
 
         init {
             try {
                 System.loadLibrary("native-core")
-            } catch (e: UnsatisfiedLinkError) {
-                // Fallback for tests or environments where native library is not loaded
+            } catch (_: UnsatisfiedLinkError) {
+                // Allows JVM/unit-test environments to load the class without NDK binaries.
             }
         }
     }
@@ -29,24 +28,14 @@ class NativeBridge {
     val isInitialized: Boolean
         get() = nativeHandle != 0L
 
-    // Native handle to the NativeCore instance
     private var nativeHandle: Long = 0
 
-    /**
-     * Initialize the native runtime.
-     * @return true if initialization was successful, false otherwise
-     */
     fun initialize(): Boolean {
-        if (nativeHandle != 0L) {
-            return true
-        }
+        if (nativeHandle != 0L) return true
         nativeHandle = nativeInitialize()
         return nativeHandle != 0L
     }
 
-    /**
-     * Shutdown the native runtime.
-     */
     fun shutdown() {
         if (nativeHandle != 0L) {
             nativeShutdown(nativeHandle)
@@ -54,187 +43,84 @@ class NativeBridge {
         }
     }
 
-    /**
-     * Get the version of the native runtime.
-     * @return Version string
-     */
-    fun getVersion(): String {
-        return nativeGetVersion(nativeHandle)
-    }
+    fun getVersion(): String = nativeGetVersion(nativeHandle)
+    fun getRuntimeStatus(): String = nativeGetRuntimeStatus(nativeHandle)
+    fun getDeviceProfile(): String = nativeGetDeviceProfile(nativeHandle)
 
-    /**
-     * Get the runtime status.
-     * @return Status string
-     */
-    fun getRuntimeStatus(): String {
-        return nativeGetRuntimeStatus(nativeHandle)
-    }
+    fun loadModel(modelName: String): Boolean = nativeLoadModel(nativeHandle, modelName)
+    fun unloadModel(modelName: String): Boolean = nativeUnloadModel(nativeHandle, modelName)
 
-    /**
-     * Get the device profile based on hardware capabilities.
-     * @return Device profile string
-     */
-    fun getDeviceProfile(): String {
-        return nativeGetDeviceProfile(nativeHandle)
-    }
-
-    // AI Engine functions
-
-    /**
-     * Load an AI model.
-     * @param modelName Name of the model to load
-     * @return true if loading was successful, false otherwise
-     */
-    fun loadModel(modelName: String): Boolean {
-        return nativeLoadModel(nativeHandle, modelName)
-    }
-
-    /**
-     * Unload an AI model.
-     * @param modelName Name of the model to unload
-     * @return true if unloading was successful, false otherwise
-     */
-    fun unloadModel(modelName: String): Boolean {
-        return nativeUnloadModel(nativeHandle, modelName)
-    }
-
-    /**
-     * Generate text from a prompt.
-     * @param prompt Input prompt
-     * @param modelName Name of the model to use (empty for default)
-     * @param temperature Temperature for generation (0.0 to 1.0)
-     * @param maxTokens Maximum number of tokens to generate
-     * @return Generated text
-     */
     fun generate(
         prompt: String,
         modelName: String = "",
         temperature: Float = 0.7f,
         maxTokens: Int = 512
-    ): String {
-        return nativeGenerate(nativeHandle, prompt, modelName, temperature, maxTokens)
-    }
+    ): String = nativeGenerate(nativeHandle, prompt, modelName, temperature, maxTokens)
 
-    /**
-     * Stop the current generation.
-     */
-    fun stopGeneration() {
-        nativeStopGeneration(nativeHandle)
-    }
+    fun stopGeneration() = nativeStopGeneration(nativeHandle)
 
-    // Hardware monitoring functions
+    fun getTotalRAM(): Long = nativeGetTotalRAM(nativeHandle)
+    fun getAvailableRAM(): Long = nativeGetAvailableRAM(nativeHandle)
+    fun getRAMUsagePercentage(): Float = nativeGetRAMUsagePercentage(nativeHandle)
+    fun getCPUUsage(): Float = nativeGetCPUUsage(nativeHandle)
+    fun getTemperature(): Float = nativeGetTemperature(nativeHandle)
+    fun getBatteryLevel(): Float = nativeGetBatteryLevel(nativeHandle)
 
-    /**
-     * Get the total RAM available on the device.
-     * @return Total RAM in bytes
-     */
-    fun getTotalRAM(): Long {
-        return nativeGetTotalRAM(nativeHandle)
-    }
+    enum class PerformanceMode { BATTERY_SAVER, BALANCED, PERFORMANCE, MAXIMUM }
 
-    /**
-     * Get the available RAM on the device.
-     * @return Available RAM in bytes
-     */
-    fun getAvailableRAM(): Long {
-        return nativeGetAvailableRAM(nativeHandle)
-    }
+    fun setPerformanceMode(mode: PerformanceMode) = nativeSetPerformanceMode(nativeHandle, mode.ordinal)
 
-    /**
-     * Get the percentage of RAM currently in use.
-     * @return RAM usage percentage (0.0 to 100.0)
-     */
-    fun getRAMUsagePercentage(): Float {
-        return nativeGetRAMUsagePercentage(nativeHandle)
-    }
-
-    /**
-     * Get the current CPU usage.
-     * @return CPU usage percentage (0.0 to 100.0)
-     */
-    fun getCPUUsage(): Float {
-        return nativeGetCPUUsage(nativeHandle)
-    }
-
-    /**
-     * Get the current device temperature.
-     * @return Temperature in Celsius
-     */
-    fun getTemperature(): Float {
-        return nativeGetTemperature(nativeHandle)
-    }
-
-    /**
-     * Get the current battery level.
-     * @return Battery level percentage (0.0 to 100.0)
-     */
-    fun getBatteryLevel(): Float {
-        return nativeGetBatteryLevel(nativeHandle)
-    }
-
-    // Performance mode functions
-
-    /**
-     * Performance modes for the AI runtime.
-     */
-    enum class PerformanceMode {
-        BATTERY_SAVER,
-        BALANCED,
-        PERFORMANCE,
-        MAXIMUM
-    }
-
-    /**
-     * Set the performance mode.
-     * @param mode Performance mode to set
-     */
-    fun setPerformanceMode(mode: PerformanceMode) {
-        nativeSetPerformanceMode(nativeHandle, mode.ordinal)
-    }
-
-    /**
-     * Get the current performance mode.
-     * @return Current performance mode
-     */
     fun getPerformanceMode(): PerformanceMode {
-        return PerformanceMode.values()[nativeGetPerformanceMode(nativeHandle)]
+        val ordinal = nativeGetPerformanceMode(nativeHandle)
+        return PerformanceMode.values().getOrElse(ordinal) { PerformanceMode.BALANCED }
     }
 
-    // Jalebi Cognitive Loop (JCL) functions
+    // -------------------------------------------------------------------------
+    // Jalebi Cognitive Loop (JCL)
+    // -------------------------------------------------------------------------
 
-    fun createJalebiLoop(goal: String, maxIterations: Int = 8): Int {
-        return nativeCreateJalebiLoop(goal, maxIterations)
-    }
+    fun createJalebiLoop(
+        goal: String,
+        maxIterations: Int = 8
+    ): Int = nativeCreateJalebiLoop(goal, maxIterations)
 
-    fun getJalebiLoopState(loopId: Int): String {
-        return nativeGetJalebiLoopState(loopId)
-    }
+    fun startJalebiLoop(loopId: Int): Boolean = nativeStartJalebiLoop(loopId)
+    fun pauseJalebiLoop(loopId: Int): Boolean = nativePauseJalebiLoop(loopId)
+    fun resumeJalebiLoop(loopId: Int): Boolean = nativeResumeJalebiLoop(loopId)
+    fun cancelJalebiLoop(loopId: Int): Boolean = nativeCancelJalebiLoop(loopId)
+    fun completeJalebiLoop(loopId: Int): Boolean = nativeCompleteJalebiLoop(loopId)
+    fun failJalebiLoop(loopId: Int, reason: String): Boolean = nativeFailJalebiLoop(loopId, reason)
 
-    // Native methods (declared in JNIBridge.h and implemented in JNIBridge.cpp)
+    /** Execute one bounded lifecycle iteration and return inspectable history JSON. */
+    fun executeJalebiIteration(loopId: Int, input: String): String =
+        nativeExecuteJalebiIteration(loopId, input)
+
+    /** Record external evaluation/model evidence; JCL owns the next state decision. */
+    fun evaluateJalebiLoop(
+        loopId: Int,
+        confidence: Float,
+        goalCompleted: Boolean,
+        evaluation: String,
+        nextAction: String,
+        memoryUpdates: String = ""
+    ): Boolean = nativeEvaluateJalebiLoop(
+        loopId, confidence, goalCompleted, evaluation, nextAction, memoryUpdates
+    )
+
+    fun getJalebiLoopState(loopId: Int): String = nativeGetJalebiLoopState(loopId)
+    fun getJalebiConfidence(loopId: Int): Float = nativeGetJalebiConfidence(loopId)
+    fun getJalebiIteration(loopId: Int): Int = nativeGetJalebiIteration(loopId)
+    fun getJalebiHistory(loopId: Int): String = nativeGetJalebiHistory(loopId)
+
     private external fun nativeInitialize(): Long
     private external fun nativeShutdown(nativeHandle: Long)
     private external fun nativeGetVersion(nativeHandle: Long): String
     private external fun nativeGetRuntimeStatus(nativeHandle: Long): String
     private external fun nativeGetDeviceProfile(nativeHandle: Long): String
 
-    private external fun nativeLoadModel(
-        nativeHandle: Long,
-        modelName: String
-    ): Boolean
-
-    private external fun nativeUnloadModel(
-        nativeHandle: Long,
-        modelName: String
-    ): Boolean
-
-    private external fun nativeGenerate(
-        nativeHandle: Long,
-        prompt: String,
-        modelName: String,
-        temperature: Float,
-        maxTokens: Int
-    ): String
-
+    private external fun nativeLoadModel(nativeHandle: Long, modelName: String): Boolean
+    private external fun nativeUnloadModel(nativeHandle: Long, modelName: String): Boolean
+    private external fun nativeGenerate(nativeHandle: Long, prompt: String, modelName: String, temperature: Float, maxTokens: Int): String
     private external fun nativeStopGeneration(nativeHandle: Long)
 
     private external fun nativeGetTotalRAM(nativeHandle: Long): Long
@@ -243,14 +129,20 @@ class NativeBridge {
     private external fun nativeGetCPUUsage(nativeHandle: Long): Float
     private external fun nativeGetTemperature(nativeHandle: Long): Float
     private external fun nativeGetBatteryLevel(nativeHandle: Long): Float
-
-    private external fun nativeSetPerformanceMode(
-        nativeHandle: Long,
-        mode: Int
-    )
-
+    private external fun nativeSetPerformanceMode(nativeHandle: Long, mode: Int)
     private external fun nativeGetPerformanceMode(nativeHandle: Long): Int
 
     private external fun nativeCreateJalebiLoop(goal: String, maxIterations: Int): Int
+    private external fun nativeStartJalebiLoop(loopId: Int): Boolean
+    private external fun nativePauseJalebiLoop(loopId: Int): Boolean
+    private external fun nativeResumeJalebiLoop(loopId: Int): Boolean
+    private external fun nativeCancelJalebiLoop(loopId: Int): Boolean
+    private external fun nativeExecuteJalebiIteration(loopId: Int, input: String): String
+    private external fun nativeEvaluateJalebiLoop(loopId: Int, confidence: Float, goalCompleted: Boolean, evaluation: String, nextAction: String, memoryUpdates: String): Boolean
     private external fun nativeGetJalebiLoopState(loopId: Int): String
+    private external fun nativeGetJalebiConfidence(loopId: Int): Float
+    private external fun nativeGetJalebiIteration(loopId: Int): Int
+    private external fun nativeGetJalebiHistory(loopId: Int): String
+    private external fun nativeCompleteJalebiLoop(loopId: Int): Boolean
+    private external fun nativeFailJalebiLoop(loopId: Int, reason: String): Boolean
 }
