@@ -13,8 +13,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Set C++ compiler flags
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -O2")
 
-# Android NDK toolchain
-include($ENV{NDK}/build/cmake/android.toolchain.cmake)
+# Android NDK toolchain is automatically injected by AGP (-DCMAKE_TOOLCHAIN_FILE)
 
 # Android-specific settings
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
