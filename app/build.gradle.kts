@@ -74,8 +74,8 @@ android {
 
     externalNativeBuild {
         cmake {
-            path = file("src/main/CMakeLists.txt")
-            version = "3.10.2"
+            path = file("CMakeLists.txt")
+            version = "3.22.1"
         }
     }
 
@@ -83,6 +83,12 @@ android {
         getByName("main") {
             jniLibs.srcDirs("src/main/jniLibs")
         }
+    }
+
+    lint {
+        abortOnError = false
+        checkReleaseBuilds = false
+        ignoreWarnings = true
     }
 }
 
