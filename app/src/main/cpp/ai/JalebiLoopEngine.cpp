@@ -9,19 +9,14 @@
 
 namespace LiveHumanAI {
 
-JalebiLoopEngine::JalebiLoopEngine()
-    : m_nextLoopId(1), m_initialized(false) {}
-
+JalebiLoopEngine::JalebiLoopEngine() : m_nextLoopId(1), m_initialized(false) {}
 JalebiLoopEngine::~JalebiLoopEngine() { shutdown(); }
 
 long long JalebiLoopEngine::nowMs() {
-    return std::chrono::duration_cast<std::chrono::milliseconds>(
-        std::chrono::system_clock::now().time_since_epoch()).count();
+    return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 }
 
-int JalebiLoopEngine::clampMaxIterations(int maxIterations) {
-    return std::max(1, std::min(maxIterations, 100));
-}
+int JalebiLoopEngine::clampMaxIterations(int maxIterations) { return std::max(1, std::min(maxIterations, 100)); }
 
 float JalebiLoopEngine::clampConfidence(float confidence) {
     if (!std::isfinite(confidence)) return 0.0f;
@@ -45,7 +40,6 @@ void JalebiLoopEngine::shutdown() {
 int JalebiLoopEngine::createLoop(const std::string& goal, int maxIterations, float successConfidence) {
     std::lock_guard<std::mutex> lock(m_mutex);
     if (!m_initialized || goal.empty()) return 0;
-
     const int id = m_nextLoopId++;
     const long long timestamp = nowMs();
     LoopContext context;
@@ -68,11 +62,7 @@ bool JalebiLoopEngine::startLoop(int loopId) {
     if (it == m_loops.end()) return false;
     LoopContext& loop = it->second;
     if (loop.state != LoopState::INITIALIZING && loop.state != LoopState::PAUSED) return false;
-    if (nowMs() >= loop.goal.deadlineMs) {
-        loop.state = LoopState::RESOURCE_LIMIT;
-        loop.updatedAtMs = nowMs();
-        return false;
-    }
+    if (nowMs() >= loop.goal.deadlineMs) { loop.state = LoopState::RESOURCE_LIMIT; loop.updatedAtMs = nowMs(); return false; }
     loop.state = LoopState::PERCEIVING;
     loop.updatedAtMs = nowMs();
     return true;
@@ -83,7 +73,7 @@ bool JalebiLoopEngine::pauseLoop(int loopId) {
     auto it = m_loops.find(loopId);
     if (it == m_loops.end()) return false;
     LoopContext& loop = it->second;
-    if (loop.state == LoopState::COMPLETED || loop.state == LoopState::FAILED || loop.state == LoopState::CANCELLED) return false;
+    if (loop.state == LoopState::COMPLETED || loop.state == LoopState::FAILED || loop.state == LoopState::CANCELLED || loop.state == LoopState::SAFETY_BLOCKED) return false;
     loop.state = LoopState::PAUSED;
     loop.updatedAtMs = nowMs();
     return true;
@@ -93,11 +83,7 @@ bool JalebiLoopEngine::resumeLoop(int loopId) {
     std::lock_guard<std::mutex> lock(m_mutex);
     auto it = m_loops.find(loopId);
     if (it == m_loops.end() || it->second.state != LoopState::PAUSED) return false;
-    if (nowMs() >= it->second.goal.deadlineMs) {
-        it->second.state = LoopState::RESOURCE_LIMIT;
-        it->second.updatedAtMs = nowMs();
-        return false;
-    }
+    if (nowMs() >= it->second.goal.deadlineMs) { it->second.state = LoopState::RESOURCE_LIMIT; it->second.updatedAtMs = nowMs(); return false; }
     it->second.state = LoopState::PERCEIVING;
     it->second.updatedAtMs = nowMs();
     return true;
@@ -107,7 +93,7 @@ bool JalebiLoopEngine::cancelLoop(int loopId) {
     std::lock_guard<std::mutex> lock(m_mutex);
     auto it = m_loops.find(loopId);
     if (it == m_loops.end()) return false;
-    if (it->second.state == LoopState::COMPLETED || it->second.state == LoopState::FAILED) return false;
+    if (it->second.state == LoopState::COMPLETED || it->second.state == LoopState::FAILED || it->second.state == LoopState::SAFETY_BLOCKED) return false;
     it->second.state = LoopState::CANCELLED;
     it->second.updatedAtMs = nowMs();
     return true;
@@ -117,7 +103,7 @@ bool JalebiLoopEngine::completeLoop(int loopId) {
     std::lock_guard<std::mutex> lock(m_mutex);
     auto it = m_loops.find(loopId);
     if (it == m_loops.end()) return false;
-    if (it->second.state == LoopState::CANCELLED || it->second.state == LoopState::FAILED) return false;
+    if (it->second.state == LoopState::CANCELLED || it->second.state == LoopState::FAILED || it->second.state == LoopState::SAFETY_BLOCKED) return false;
     it->second.state = LoopState::COMPLETED;
     it->second.updatedAtMs = nowMs();
     return true;
@@ -128,8 +114,20 @@ bool JalebiLoopEngine::failLoop(int loopId, const std::string& reason) {
     auto it = m_loops.find(loopId);
     if (it == m_loops.end()) return false;
     LoopContext& loop = it->second;
-    if (loop.state == LoopState::COMPLETED || loop.state == LoopState::CANCELLED) return false;
+    if (loop.state == LoopState::COMPLETED || loop.state == LoopState::CANCELLED || loop.state == LoopState::SAFETY_BLOCKED) return false;
     loop.state = LoopState::FAILED;
+    loop.updatedAtMs = nowMs();
+    if (!loop.history.empty() && !reason.empty()) loop.history.back().errors.push_back(reason);
+    return true;
+}
+
+bool JalebiLoopEngine::safetyBlockLoop(int loopId, const std::string& reason) {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    auto it = m_loops.find(loopId);
+    if (it == m_loops.end()) return false;
+    LoopContext& loop = it->second;
+    if (loop.state == LoopState::COMPLETED || loop.state == LoopState::FAILED || loop.state == LoopState::CANCELLED) return false;
+    loop.state = LoopState::SAFETY_BLOCKED;
     loop.updatedAtMs = nowMs();
     if (!loop.history.empty() && !reason.empty()) loop.history.back().errors.push_back(reason);
     return true;
@@ -140,22 +138,14 @@ JalebiLoopEngine::Iteration JalebiLoopEngine::executeIteration(int loopId, const
     Iteration iteration;
     auto it = m_loops.find(loopId);
     if (it == m_loops.end()) return iteration;
-
     LoopContext& loop = it->second;
     if (loop.state == LoopState::PAUSED || loop.state == LoopState::CANCELLED || loop.state == LoopState::COMPLETED || loop.state == LoopState::FAILED || loop.state == LoopState::RESOURCE_LIMIT || loop.state == LoopState::SAFETY_BLOCKED) return iteration;
-
     const long long now = nowMs();
-    if (now >= loop.goal.deadlineMs) {
+    if (now >= loop.goal.deadlineMs || loop.currentIteration >= loop.goal.maxIterations) {
         loop.state = LoopState::RESOURCE_LIMIT;
         loop.updatedAtMs = now;
         return iteration;
     }
-    if (loop.currentIteration >= loop.goal.maxIterations) {
-        loop.state = LoopState::RESOURCE_LIMIT;
-        loop.updatedAtMs = now;
-        return iteration;
-    }
-
     iteration.iterationId = ++loop.currentIteration;
     iteration.timestamp = now;
     iteration.input = currentInput;
@@ -186,8 +176,7 @@ bool JalebiLoopEngine::recordEvaluation(int loopId, float confidence, bool goalC
     auto it = m_loops.find(loopId);
     if (it == m_loops.end() || it->second.history.empty()) return false;
     LoopContext& loop = it->second;
-    if (loop.state == LoopState::CANCELLED || loop.state == LoopState::FAILED || loop.state == LoopState::COMPLETED) return false;
-
+    if (loop.state == LoopState::CANCELLED || loop.state == LoopState::FAILED || loop.state == LoopState::COMPLETED || loop.state == LoopState::SAFETY_BLOCKED) return false;
     const long long now = nowMs();
     if (now >= loop.goal.deadlineMs) {
         loop.state = LoopState::RESOURCE_LIMIT;
@@ -195,7 +184,6 @@ bool JalebiLoopEngine::recordEvaluation(int loopId, float confidence, bool goalC
         loop.history.back().errors.push_back("Goal deadline exceeded");
         return false;
     }
-
     const float safeConfidence = clampConfidence(confidence);
     loop.confidence = safeConfidence;
     Iteration& iteration = loop.history.back();
@@ -203,7 +191,6 @@ bool JalebiLoopEngine::recordEvaluation(int loopId, float confidence, bool goalC
     iteration.evaluation = evaluation;
     iteration.memoryUpdates = memoryUpdates;
     iteration.nextAction = nextAction;
-
     if (goalCompleted && safeConfidence >= loop.goal.successConfidence) {
         loop.state = LoopState::COMPLETED;
     } else if (loop.currentIteration >= loop.goal.maxIterations) {
@@ -283,14 +270,12 @@ std::string JalebiLoopEngine::getLoopHistoryJson(int loopId) const {
     std::lock_guard<std::mutex> lock(m_mutex);
     auto it = m_loops.find(loopId);
     if (it == m_loops.end()) return "[]";
-
     std::ostringstream out;
     out << '[';
     for (size_t i = 0; i < it->second.history.size(); ++i) {
         const Iteration& item = it->second.history[i];
         if (i > 0) out << ',';
-        out << "{\"iterationId\":" << item.iterationId
-            << ",\"timestamp\":" << item.timestamp
+        out << "{\"iterationId\":" << item.iterationId << ",\"timestamp\":" << item.timestamp
             << ",\"input\":\"" << jsonEscape(item.input)
             << "\",\"perception\":\"" << jsonEscape(item.perception)
             << "\",\"interpretation\":\"" << jsonEscape(item.interpretation)
@@ -301,12 +286,8 @@ std::string JalebiLoopEngine::getLoopHistoryJson(int loopId) const {
             << "\",\"evaluation\":\"" << jsonEscape(item.evaluation)
             << "\",\"confidence\":" << std::fixed << std::setprecision(3) << item.confidence
             << ",\"memoryUpdates\":\"" << jsonEscape(item.memoryUpdates)
-            << "\",\"nextAction\":\"" << jsonEscape(item.nextAction)
-            << "\",\"errors\":[";
-        for (size_t e = 0; e < item.errors.size(); ++e) {
-            if (e > 0) out << ',';
-            out << "\"" << jsonEscape(item.errors[e]) << "\"";
-        }
+            << "\",\"nextAction\":\"" << jsonEscape(item.nextAction) << "\",\"errors\":[";
+        for (size_t e = 0; e < item.errors.size(); ++e) { if (e > 0) out << ','; out << "\"" << jsonEscape(item.errors[e]) << "\""; }
         out << "]}";
     }
     out << ']';
