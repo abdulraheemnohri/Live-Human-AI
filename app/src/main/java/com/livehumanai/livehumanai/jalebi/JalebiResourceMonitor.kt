@@ -10,7 +10,8 @@ import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
-data class JalebiResourceSnapshot(
+/** Raw Android device resource sample. Policy snapshots are kept separate. */
+data class JalebiDeviceResourceSnapshot(
     val availableMemoryMb: Long,
     val memoryPressure: Boolean,
     val batteryPercent: Int,
@@ -25,14 +26,14 @@ data class JalebiResourceSnapshot(
 
 @Singleton
 class JalebiResourceMonitor @Inject constructor(private val context: Context) {
-    suspend fun snapshot(): JalebiResourceSnapshot = withContext(Dispatchers.Default) {
+    suspend fun snapshot(): JalebiDeviceResourceSnapshot = withContext(Dispatchers.Default) {
         val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
         val memory = ActivityManager.MemoryInfo().also(activityManager::getMemoryInfo)
         val battery = context.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
         val batteryPercent = battery.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY).coerceIn(0, 100)
         val power = context.getSystemService(Context.POWER_SERVICE) as PowerManager
         val thermal = if (Build.VERSION.SDK_INT >= 29) power.currentThermalStatus else 0
-        JalebiResourceSnapshot(
+        JalebiDeviceResourceSnapshot(
             availableMemoryMb = memory.availMem / (1024L * 1024L),
             memoryPressure = memory.low,
             batteryPercent = batteryPercent,
