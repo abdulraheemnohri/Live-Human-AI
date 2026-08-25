@@ -12,9 +12,7 @@ namespace LiveHumanAI {
 JalebiLoopEngine::JalebiLoopEngine()
     : m_nextLoopId(1), m_initialized(false) {}
 
-JalebiLoopEngine::~JalebiLoopEngine() {
-    shutdown();
-}
+JalebiLoopEngine::~JalebiLoopEngine() { shutdown(); }
 
 long long JalebiLoopEngine::nowMs() {
     return std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -46,7 +44,7 @@ void JalebiLoopEngine::shutdown() {
 
 int JalebiLoopEngine::createLoop(const std::string& goal, int maxIterations, float successConfidence) {
     std::lock_guard<std::mutex> lock(m_mutex);
-    if (!m_initialized) return 0;
+    if (!m_initialized || goal.empty()) return 0;
 
     const int id = m_nextLoopId++;
     const long long timestamp = nowMs();
@@ -55,6 +53,8 @@ int JalebiLoopEngine::createLoop(const std::string& goal, int maxIterations, flo
     context.goal.description = goal;
     context.goal.maxIterations = clampMaxIterations(maxIterations);
     context.goal.successConfidence = clampConfidence(successConfidence);
+    context.goal.maxDurationMs = 60000;
+    context.goal.deadlineMs = timestamp + context.goal.maxDurationMs;
     context.state = LoopState::INITIALIZING;
     context.createdAtMs = timestamp;
     context.updatedAtMs = timestamp;
@@ -68,6 +68,11 @@ bool JalebiLoopEngine::startLoop(int loopId) {
     if (it == m_loops.end()) return false;
     LoopContext& loop = it->second;
     if (loop.state != LoopState::INITIALIZING && loop.state != LoopState::PAUSED) return false;
+    if (nowMs() >= loop.goal.deadlineMs) {
+        loop.state = LoopState::RESOURCE_LIMIT;
+        loop.updatedAtMs = nowMs();
+        return false;
+    }
     loop.state = LoopState::PERCEIVING;
     loop.updatedAtMs = nowMs();
     return true;
@@ -88,6 +93,11 @@ bool JalebiLoopEngine::resumeLoop(int loopId) {
     std::lock_guard<std::mutex> lock(m_mutex);
     auto it = m_loops.find(loopId);
     if (it == m_loops.end() || it->second.state != LoopState::PAUSED) return false;
+    if (nowMs() >= it->second.goal.deadlineMs) {
+        it->second.state = LoopState::RESOURCE_LIMIT;
+        it->second.updatedAtMs = nowMs();
+        return false;
+    }
     it->second.state = LoopState::PERCEIVING;
     it->second.updatedAtMs = nowMs();
     return true;
@@ -132,35 +142,42 @@ JalebiLoopEngine::Iteration JalebiLoopEngine::executeIteration(int loopId, const
     if (it == m_loops.end()) return iteration;
 
     LoopContext& loop = it->second;
-    if (loop.state == LoopState::PAUSED || loop.state == LoopState::CANCELLED || loop.state == LoopState::COMPLETED || loop.state == LoopState::FAILED) return iteration;
+    if (loop.state == LoopState::PAUSED || loop.state == LoopState::CANCELLED || loop.state == LoopState::COMPLETED || loop.state == LoopState::FAILED || loop.state == LoopState::RESOURCE_LIMIT || loop.state == LoopState::SAFETY_BLOCKED) return iteration;
+
+    const long long now = nowMs();
+    if (now >= loop.goal.deadlineMs) {
+        loop.state = LoopState::RESOURCE_LIMIT;
+        loop.updatedAtMs = now;
+        return iteration;
+    }
     if (loop.currentIteration >= loop.goal.maxIterations) {
         loop.state = LoopState::RESOURCE_LIMIT;
-        loop.updatedAtMs = nowMs();
+        loop.updatedAtMs = now;
         return iteration;
     }
 
     iteration.iterationId = ++loop.currentIteration;
-    iteration.timestamp = nowMs();
+    iteration.timestamp = now;
     iteration.input = currentInput;
     loop.state = LoopState::PERCEIVING;
     iteration.perception = currentInput.empty() ? "No input supplied" : "Input received";
     loop.state = LoopState::INTERPRETING;
-    iteration.interpretation = "External interpreter stage pending";
+    iteration.interpretation = "Semantic input accepted";
     loop.state = LoopState::REASONING;
-    iteration.reasoningSummary = "External reasoning/model stage pending";
+    iteration.reasoningSummary = "Awaiting model reasoning result";
     loop.state = LoopState::PLANNING;
-    iteration.plan = "External planner stage pending";
+    iteration.plan = "Awaiting planner/tool selection";
     loop.state = LoopState::ACTING;
-    iteration.action = "External tool/action stage pending";
+    iteration.action = "Awaiting authorized action";
     loop.state = LoopState::OBSERVING;
-    iteration.observation = "External observation stage pending";
+    iteration.observation = "Awaiting post-action observation";
     loop.state = LoopState::EVALUATING;
-    iteration.evaluation = "Awaiting external evaluation evidence";
+    iteration.evaluation = "Awaiting evidence evaluation";
     iteration.confidence = 0.0f;
     iteration.nextAction = "EVALUATE";
     loop.history.push_back(iteration);
     loop.state = LoopState::WAITING_USER;
-    loop.updatedAtMs = nowMs();
+    loop.updatedAtMs = now;
     return iteration;
 }
 
@@ -170,6 +187,14 @@ bool JalebiLoopEngine::recordEvaluation(int loopId, float confidence, bool goalC
     if (it == m_loops.end() || it->second.history.empty()) return false;
     LoopContext& loop = it->second;
     if (loop.state == LoopState::CANCELLED || loop.state == LoopState::FAILED || loop.state == LoopState::COMPLETED) return false;
+
+    const long long now = nowMs();
+    if (now >= loop.goal.deadlineMs) {
+        loop.state = LoopState::RESOURCE_LIMIT;
+        loop.updatedAtMs = now;
+        loop.history.back().errors.push_back("Goal deadline exceeded");
+        return false;
+    }
 
     const float safeConfidence = clampConfidence(confidence);
     loop.confidence = safeConfidence;
@@ -189,7 +214,7 @@ bool JalebiLoopEngine::recordEvaluation(int loopId, float confidence, bool goalC
     } else {
         loop.state = LoopState::WAITING_USER;
     }
-    loop.updatedAtMs = nowMs();
+    loop.updatedAtMs = now;
     return true;
 }
 
