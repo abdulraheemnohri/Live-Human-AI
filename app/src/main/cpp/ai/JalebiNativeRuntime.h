@@ -70,31 +70,12 @@ public:
         return m_activeLoop;
     }
 
-    bool start() {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        return m_initialized && usableLocked() && m_engine.startLoop(m_activeLoop);
-    }
+    bool start() { std::lock_guard<std::mutex> lock(m_mutex); return m_initialized && usableLocked() && m_engine.startLoop(m_activeLoop); }
+    bool pause() { std::lock_guard<std::mutex> lock(m_mutex); return m_initialized && usableLocked() && m_engine.pauseLoop(m_activeLoop); }
+    bool resume() { std::lock_guard<std::mutex> lock(m_mutex); return m_initialized && m_activeLoop > 0 && m_engine.resumeLoop(m_activeLoop); }
+    bool cancel() { std::lock_guard<std::mutex> lock(m_mutex); return m_initialized && m_activeLoop > 0 && m_engine.cancelLoop(m_activeLoop); }
 
-    bool pause() {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        return m_initialized && usableLocked() && m_engine.pauseLoop(m_activeLoop);
-    }
-
-    bool resume() {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        return m_initialized && m_activeLoop > 0 && m_engine.resumeLoop(m_activeLoop);
-    }
-
-    bool cancel() {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        if (!m_initialized || m_activeLoop <= 0) return false;
-        return m_engine.cancelLoop(m_activeLoop);
-    }
-
-    Decision process(const Input& input) {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        return processLocked(input);
-    }
+    Decision process(const Input& input) { std::lock_guard<std::mutex> lock(m_mutex); return processLocked(input); }
 
     std::string submitVision(const std::string& sceneId, const std::string& objects, const std::string& text,
                              float confidence, const JalebiResourceSnapshot& resources, bool flagshipDevice) {
@@ -108,7 +89,6 @@ public:
         input.evidenceAvailable = !input.world.detectedObjects.empty() || !input.world.detectedText.empty() || !sceneId.empty();
         input.resources = resources;
         input.flagshipDevice = flagshipDevice;
-
         std::lock_guard<std::mutex> lock(m_mutex);
         Decision d = processLocked(input);
         if (!d.runInference || d.paused || d.terminal || d.safetyBlocked) return decisionJson(d);
@@ -118,10 +98,7 @@ public:
 
     std::string submitSpeech(const std::string& transcript, float confidence, bool isFinal,
                              const JalebiResourceSnapshot& resources, bool flagshipDevice) {
-        if (!isFinal || transcript.empty()) {
-            return "{\"runInference\":false,\"paused\":false,\"terminal\":false,\"safetyBlocked\":false,\"sceneChanged\":false,\"confidence\":\"recheck\",\"resource\":\"allow\",\"model\":\"small\",\"reason\":\"partial_or_empty\"}";
-        }
-
+        if (!isFinal || transcript.empty()) return "{\"runInference\":false,\"paused\":false,\"terminal\":false,\"safetyBlocked\":false,\"sceneChanged\":false,\"confidence\":\"recheck\",\"resource\":\"allow\",\"model\":\"small\",\"reason\":\"partial_or_empty\"}";
         Input input;
         input.semanticInput = "speech:" + transcript;
         input.world.timestampMs = nowMs();
@@ -131,7 +108,6 @@ public:
         input.evidenceAvailable = true;
         input.resources = resources;
         input.flagshipDevice = flagshipDevice;
-
         std::lock_guard<std::mutex> lock(m_mutex);
         Decision d = processLocked(input);
         if (!d.runInference || d.paused || d.terminal || d.safetyBlocked) return decisionJson(d);
@@ -139,10 +115,7 @@ public:
         return decisionJson(d);
     }
 
-    JalebiLoopEngine::Iteration execute(const std::string& input) {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        return executeLocked(input);
-    }
+    JalebiLoopEngine::Iteration execute(const std::string& input) { std::lock_guard<std::mutex> lock(m_mutex); return executeLocked(input); }
 
     bool evaluate(float confidence, bool completed, const std::string& evidence,
                   const std::string& nextAction, const std::string& memoryUpdates = "") {
@@ -151,22 +124,13 @@ public:
         return m_engine.recordEvaluation(m_activeLoop, sanitizeConfidence(confidence), completed, evidence, nextAction, memoryUpdates);
     }
 
-    int activeLoop() const {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        return m_activeLoop;
-    }
-
-    bool initialized() const {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        return m_initialized;
-    }
-
+    int activeLoop() const { std::lock_guard<std::mutex> lock(m_mutex); return m_activeLoop; }
+    bool initialized() const { std::lock_guard<std::mutex> lock(m_mutex); return m_initialized; }
     JalebiLoopEngine& engine() { return m_engine; }
 
 private:
     static long long nowMs() {
-        return std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::system_clock::now().time_since_epoch()).count();
+        return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     }
 
     static float sanitizeConfidence(float confidence) {
@@ -177,47 +141,34 @@ private:
     bool usableLocked() const {
         if (!m_initialized || m_activeLoop <= 0) return false;
         const auto state = m_engine.getLoopState(m_activeLoop);
-        return state != JalebiLoopEngine::LoopState::CANCELLED &&
-               state != JalebiLoopEngine::LoopState::COMPLETED &&
-               state != JalebiLoopEngine::LoopState::FAILED &&
-               state != JalebiLoopEngine::LoopState::RESOURCE_LIMIT &&
+        return state != JalebiLoopEngine::LoopState::CANCELLED && state != JalebiLoopEngine::LoopState::COMPLETED &&
+               state != JalebiLoopEngine::LoopState::FAILED && state != JalebiLoopEngine::LoopState::RESOURCE_LIMIT &&
                state != JalebiLoopEngine::LoopState::SAFETY_BLOCKED;
     }
 
     Decision processLocked(const Input& input) {
         Decision d;
-        if (!m_initialized || m_activeLoop <= 0) {
-            d.reason = "runtime_not_ready";
-            return d;
-        }
-
+        if (!m_initialized || m_activeLoop <= 0) { d.reason = "runtime_not_ready"; return d; }
         const auto state = m_engine.getLoopState(m_activeLoop);
-        if (state == JalebiLoopEngine::LoopState::CANCELLED ||
-            state == JalebiLoopEngine::LoopState::COMPLETED ||
-            state == JalebiLoopEngine::LoopState::FAILED ||
-            state == JalebiLoopEngine::LoopState::RESOURCE_LIMIT ||
+        if (state == JalebiLoopEngine::LoopState::CANCELLED || state == JalebiLoopEngine::LoopState::COMPLETED ||
+            state == JalebiLoopEngine::LoopState::FAILED || state == JalebiLoopEngine::LoopState::RESOURCE_LIMIT ||
             state == JalebiLoopEngine::LoopState::SAFETY_BLOCKED) {
             d.terminal = true;
             d.reason = m_engine.getStateName(state);
             return d;
         }
 
-        // Perception is permission-bound. A missing Android permission must
-        // stop the cognitive cycle instead of silently attempting access.
         if (!input.world.permissionAvailable) {
             d.safetyBlocked = true;
+            d.terminal = true;
             d.reason = "permission_unavailable";
-            m_engine.failLoop(m_activeLoop, d.reason);
+            m_engine.safetyBlockLoop(m_activeLoop, d.reason);
             return d;
         }
 
         d.resourceDecision = JalebiResourcePolicy::evaluate(input.resources);
         d.paused = d.resourceDecision == JalebiResourcePolicy::Decision::PAUSE;
-        if (d.paused) {
-            d.reason = "resource_limit";
-            m_engine.pauseLoop(m_activeLoop);
-            return d;
-        }
+        if (d.paused) { d.reason = "resource_limit"; m_engine.pauseLoop(m_activeLoop); return d; }
 
         d.sceneChanged = m_world.update(input.world);
         const bool degraded = d.resourceDecision == JalebiResourcePolicy::Decision::REDUCE_WORKLOAD;
