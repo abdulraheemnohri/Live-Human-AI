@@ -3,6 +3,7 @@ package com.livehumanai.livehumanai.service
 import android.app.Service
 import android.content.Intent
 import android.os.Binder
+import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.speech.RecognitionListener
@@ -47,8 +48,6 @@ class STTService : Service() {
     }
 
     fun startRecognition(callback: (String) -> Unit) { startRecognitionInternal(null, callback) }
-
-    /** Starts real speech recognition and forwards final semantic text to JCL. */
     fun startLiveRecognition(loopId: Int, callback: (String) -> Unit = {}) { startRecognitionInternal(loopId, callback) }
 
     private fun startRecognitionInternal(loopId: Int?, callback: (String) -> Unit) {
@@ -84,7 +83,9 @@ class STTService : Service() {
         }
         override fun onResults(results: Bundle?) {
             val text = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull().orEmpty()
-            val confidence = results?.getFloatArray(SpeechRecognizer.CONFIDENCE_SCORES)?.firstOrNull() ?: 0.0f
+            val confidence = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                results?.getFloatArray(SpeechRecognizer.CONFIDENCE_SCORES)?.firstOrNull() ?: 0.0f
+            } else 0.0f
             if (text.isNotBlank()) {
                 recognitionCallback?.invoke(text)
                 liveLoopId?.let { aiRepository.submitJalebiSpeech(it, text, confidence, true) }
