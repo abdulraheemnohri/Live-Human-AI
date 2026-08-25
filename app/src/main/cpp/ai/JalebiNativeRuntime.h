@@ -10,6 +10,7 @@
 #include "JalebiModelEscalator.h"
 #include "JalebiMemoryPolicy.h"
 #include <algorithm>
+#include <chrono>
 #include <mutex>
 #include <sstream>
 #include <string>
@@ -88,7 +89,7 @@ public:
                              float confidence, const JalebiResourceSnapshot& resources, bool flagshipDevice) {
         Input input;
         input.semanticInput = "vision:" + sceneId;
-        input.world.timestampMs = JalebiLoopEngine::nowMs();
+        input.world.timestampMs = nowMs();
         input.world.sceneId = sceneId;
         input.world.detectedObjects = split(objects, '|');
         input.world.detectedText = split(text, '|');
@@ -97,25 +98,26 @@ public:
         input.resources = resources;
         input.flagshipDevice = flagshipDevice;
         const Decision d = process(input);
-        if (!d.runInference) return decisionJson(d);
-        m_engine.executeIteration(m_activeLoop, input.semanticInput);
+        if (!d.runInference || d.paused) return decisionJson(d);
+        execute(input.semanticInput);
         return decisionJson(d);
     }
 
     std::string submitSpeech(const std::string& transcript, float confidence, bool isFinal,
                              const JalebiResourceSnapshot& resources, bool flagshipDevice) {
-        if (!isFinal || transcript.empty()) return "{\"accepted\":false,\"reason\":\"partial_or_empty\"}";
+        if (!isFinal || transcript.empty()) return "{\"runInference\":false,\"paused\":false,\"sceneChanged\":false,\"confidence\":\"recheck\",\"resource\":\"allow\",\"model\":\"small\",\"reason\":\"partial_or_empty\"}";
         Input input;
         input.semanticInput = "speech:" + transcript;
-        input.world.timestampMs = JalebiLoopEngine::nowMs();
+        input.world.timestampMs = nowMs();
         input.world.speakerState = "speaking";
+        input.world.taskChanged = true;
         input.confidence = std::clamp(confidence, 0.0f, 1.0f);
         input.evidenceAvailable = true;
         input.resources = resources;
         input.flagshipDevice = flagshipDevice;
         const Decision d = process(input);
         if (d.paused) return decisionJson(d);
-        m_engine.executeIteration(m_activeLoop, input.semanticInput);
+        execute(input.semanticInput);
         return decisionJson(d);
     }
 
@@ -135,13 +137,16 @@ public:
     JalebiLoopEngine& engine() { return m_engine; }
 
 private:
+    static long long nowMs() {
+        return std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now().time_since_epoch()).count();
+    }
+
     static std::vector<std::string> split(const std::string& value, char delimiter) {
         std::vector<std::string> result;
         std::stringstream stream(value);
         std::string item;
-        while (std::getline(stream, item, delimiter)) {
-            if (!item.empty()) result.push_back(item);
-        }
+        while (std::getline(stream, item, delimiter)) if (!item.empty()) result.push_back(item);
         return result;
     }
 
@@ -162,7 +167,7 @@ private:
         }
     }
 
-    static std::string modelName(JalebiModelEscalator::Tier tier) {
+    static const char* modelName(JalebiModelEscalator::Tier tier) {
         switch (tier) {
             case JalebiModelEscalator::Tier::MEDIUM: return "medium";
             case JalebiModelEscalator::Tier::LARGE: return "large";
