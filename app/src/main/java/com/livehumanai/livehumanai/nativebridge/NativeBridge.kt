@@ -11,11 +11,7 @@ class NativeBridge {
     private var nativeHandle: Long = 0
     val isInitialized: Boolean get() = nativeHandle != 0L
 
-    fun initialize(): Boolean {
-        if (nativeHandle != 0L) return true
-        nativeHandle = nativeInitialize()
-        return nativeHandle != 0L
-    }
+    fun initialize(): Boolean { if (nativeHandle != 0L) return true; nativeHandle = nativeInitialize(); return nativeHandle != 0L }
     fun shutdown() { if (nativeHandle != 0L) { nativeShutdown(nativeHandle); nativeHandle = 0L } }
 
     fun getVersion(): String = nativeGetVersion(nativeHandle)
@@ -37,9 +33,6 @@ class NativeBridge {
     fun setPerformanceMode(mode: PerformanceMode) = nativeSetPerformanceMode(nativeHandle, mode.ordinal)
     fun getPerformanceMode(): PerformanceMode = PerformanceMode.values().getOrElse(nativeGetPerformanceMode(nativeHandle)) { PerformanceMode.BALANCED }
 
-    // ---------------------------------------------------------------------
-    // Jalebi Cognitive Loop: bounded lifecycle + semantic perception input.
-    // ---------------------------------------------------------------------
     fun createJalebiLoop(goal: String, maxIterations: Int = 8): Int = nativeCreateJalebiLoop(goal, maxIterations)
     fun startJalebiLoop(loopId: Int): Boolean = nativeStartJalebiLoop(loopId)
     fun pauseJalebiLoop(loopId: Int): Boolean = nativePauseJalebiLoop(loopId)
@@ -47,26 +40,25 @@ class NativeBridge {
     fun cancelJalebiLoop(loopId: Int): Boolean = nativeCancelJalebiLoop(loopId)
     fun completeJalebiLoop(loopId: Int): Boolean = nativeCompleteJalebiLoop(loopId)
     fun failJalebiLoop(loopId: Int, reason: String): Boolean = nativeFailJalebiLoop(loopId, reason)
-
     fun executeJalebiIteration(loopId: Int, input: String): String = nativeExecuteJalebiIteration(loopId, input)
-    fun evaluateJalebiLoop(loopId: Int, confidence: Float, goalCompleted: Boolean, evaluation: String, nextAction: String, memoryUpdates: String = ""): Boolean =
-        nativeEvaluateJalebiLoop(loopId, confidence, goalCompleted, evaluation, nextAction, memoryUpdates)
+    fun evaluateJalebiLoop(loopId: Int, confidence: Float, goalCompleted: Boolean, evaluation: String, nextAction: String, memoryUpdates: String = ""): Boolean = nativeEvaluateJalebiLoop(loopId, confidence, goalCompleted, evaluation, nextAction, memoryUpdates)
 
-    /**
-     * Submit semantic camera output. `objects` and `text` are pipe-separated;
-     * raw frames never cross JNI or enter JCL history.
-     */
     fun submitJalebiVision(loopId: Int, sceneId: String, objects: List<String>, text: List<String>, confidence: Float, flagshipDevice: Boolean = false): String =
         nativeSubmitJalebiVision(loopId, sceneId, objects.filter { it.isNotBlank() }.joinToString("|"), text.filter { it.isNotBlank() }.joinToString("|"), confidence.coerceIn(0f, 1f), getRAMUsagePercentage(), getCPUUsage(), getTemperature(), getBatteryLevel(), flagshipDevice)
-
-    /** Submit only final STT text; partial speech is rejected by native policy. */
     fun submitJalebiSpeech(loopId: Int, transcript: String, confidence: Float, isFinal: Boolean, flagshipDevice: Boolean = false): String =
         nativeSubmitJalebiSpeech(loopId, transcript, confidence.coerceIn(0f, 1f), isFinal, getRAMUsagePercentage(), getCPUUsage(), getTemperature(), getBatteryLevel(), flagshipDevice)
-
     fun getJalebiLoopState(loopId: Int): String = nativeGetJalebiLoopState(loopId)
     fun getJalebiConfidence(loopId: Int): Float = nativeGetJalebiConfidence(loopId)
     fun getJalebiIteration(loopId: Int): Int = nativeGetJalebiIteration(loopId)
     fun getJalebiHistory(loopId: Int): String = nativeGetJalebiHistory(loopId)
+
+    // Native speech / Whisper bridge.
+    fun loadSpeechModel(modelPath: String): Boolean = nativeLoadSpeechModel(nativeHandle, modelPath)
+    fun unloadSpeechModel() = nativeUnloadSpeechModel(nativeHandle)
+    fun isSpeechModelLoaded(): Boolean = nativeIsSpeechModelLoaded(nativeHandle)
+    fun transcribePcm(samples: ShortArray, sampleRate: Int = 16_000, offset: Int = 0): String =
+        if (!isInitialized || samples.isEmpty()) "" else nativeTranscribePcm(nativeHandle, samples, sampleRate, offset)
+    fun stopSpeech() = nativeStopSpeech(nativeHandle)
 
     private external fun nativeInitialize(): Long
     private external fun nativeShutdown(nativeHandle: Long)
@@ -85,7 +77,6 @@ class NativeBridge {
     private external fun nativeGetBatteryLevel(nativeHandle: Long): Float
     private external fun nativeSetPerformanceMode(nativeHandle: Long, mode: Int)
     private external fun nativeGetPerformanceMode(nativeHandle: Long): Int
-
     private external fun nativeCreateJalebiLoop(goal: String, maxIterations: Int): Int
     private external fun nativeStartJalebiLoop(loopId: Int): Boolean
     private external fun nativePauseJalebiLoop(loopId: Int): Boolean
@@ -101,4 +92,9 @@ class NativeBridge {
     private external fun nativeGetJalebiHistory(loopId: Int): String
     private external fun nativeCompleteJalebiLoop(loopId: Int): Boolean
     private external fun nativeFailJalebiLoop(loopId: Int, reason: String): Boolean
+    private external fun nativeLoadSpeechModel(nativeHandle: Long, modelPath: String): Boolean
+    private external fun nativeUnloadSpeechModel(nativeHandle: Long)
+    private external fun nativeIsSpeechModelLoaded(nativeHandle: Long): Boolean
+    private external fun nativeTranscribePcm(nativeHandle: Long, samples: ShortArray, sampleRate: Int, offset: Int): String
+    private external fun nativeStopSpeech(nativeHandle: Long)
 }
