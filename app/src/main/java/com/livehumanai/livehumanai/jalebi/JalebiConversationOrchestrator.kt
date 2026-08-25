@@ -4,14 +4,11 @@ import com.livehumanai.livehumanai.service.TTSService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlin.math.max
+import kotlinx.coroutines.suspendCancellableCoroutine
 
-/**
- * End-to-end bounded conversation coordinator:
- * STT semantic event -> JCL conversation -> LLM -> Android TTS.
- * Audio capture remains outside this class so permissions/lifecycle stay in AudioManager.
- */
+/** Bounded STT -> JCL conversation -> LLM -> TTS coordinator. */
 class JalebiConversationOrchestrator(
     private val conversation: JalebiConversationLoopAdapter,
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.Default),
@@ -49,7 +46,7 @@ class JalebiConversationOrchestrator(
 
     private suspend fun speak(text: String): Boolean {
         val service = tts ?: return false
-        return kotlinx.coroutines.suspendCancellableCoroutine { continuation ->
+        return suspendCancellableCoroutine { continuation ->
             service.startSynthesis(text) { bytes ->
                 val ok = bytes.isNotEmpty()
                 if (continuation.isActive) continuation.resume(ok) {}
