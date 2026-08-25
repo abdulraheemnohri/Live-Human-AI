@@ -1,62 +1,29 @@
 package com.livehumanai.livehumanai.nativebridge
 
-/**
- * Kotlin interface to the Live Human AI native runtime.
- * JCL is intentionally exposed as a bounded, inspectable lifecycle rather than
- * an unrestricted autonomous agent.
- */
+/** Kotlin/JNI boundary for the Live Human AI native runtime and bounded JCL. */
 class NativeBridge {
-
     companion object {
         private var instance: NativeBridge? = null
-
-        @JvmStatic
-        fun getInstance(): NativeBridge {
-            if (instance == null) instance = NativeBridge()
-            return instance!!
-        }
-
-        init {
-            try {
-                System.loadLibrary("native-core")
-            } catch (_: UnsatisfiedLinkError) {
-                // Allows JVM/unit-test environments to load the class without NDK binaries.
-            }
-        }
+        @JvmStatic fun getInstance(): NativeBridge = instance ?: NativeBridge().also { instance = it }
+        init { try { System.loadLibrary("native-core") } catch (_: UnsatisfiedLinkError) {} }
     }
 
-    val isInitialized: Boolean
-        get() = nativeHandle != 0L
-
     private var nativeHandle: Long = 0
+    val isInitialized: Boolean get() = nativeHandle != 0L
 
     fun initialize(): Boolean {
         if (nativeHandle != 0L) return true
         nativeHandle = nativeInitialize()
         return nativeHandle != 0L
     }
-
-    fun shutdown() {
-        if (nativeHandle != 0L) {
-            nativeShutdown(nativeHandle)
-            nativeHandle = 0
-        }
-    }
+    fun shutdown() { if (nativeHandle != 0L) { nativeShutdown(nativeHandle); nativeHandle = 0L } }
 
     fun getVersion(): String = nativeGetVersion(nativeHandle)
     fun getRuntimeStatus(): String = nativeGetRuntimeStatus(nativeHandle)
     fun getDeviceProfile(): String = nativeGetDeviceProfile(nativeHandle)
-
     fun loadModel(modelName: String): Boolean = nativeLoadModel(nativeHandle, modelName)
     fun unloadModel(modelName: String): Boolean = nativeUnloadModel(nativeHandle, modelName)
-
-    fun generate(
-        prompt: String,
-        modelName: String = "",
-        temperature: Float = 0.7f,
-        maxTokens: Int = 512
-    ): String = nativeGenerate(nativeHandle, prompt, modelName, temperature, maxTokens)
-
+    fun generate(prompt: String, modelName: String = "", temperature: Float = 0.7f, maxTokens: Int = 512): String = nativeGenerate(nativeHandle, prompt, modelName, temperature, maxTokens)
     fun stopGeneration() = nativeStopGeneration(nativeHandle)
 
     fun getTotalRAM(): Long = nativeGetTotalRAM(nativeHandle)
@@ -67,23 +34,13 @@ class NativeBridge {
     fun getBatteryLevel(): Float = nativeGetBatteryLevel(nativeHandle)
 
     enum class PerformanceMode { BATTERY_SAVER, BALANCED, PERFORMANCE, MAXIMUM }
-
     fun setPerformanceMode(mode: PerformanceMode) = nativeSetPerformanceMode(nativeHandle, mode.ordinal)
+    fun getPerformanceMode(): PerformanceMode = PerformanceMode.values().getOrElse(nativeGetPerformanceMode(nativeHandle)) { PerformanceMode.BALANCED }
 
-    fun getPerformanceMode(): PerformanceMode {
-        val ordinal = nativeGetPerformanceMode(nativeHandle)
-        return PerformanceMode.values().getOrElse(ordinal) { PerformanceMode.BALANCED }
-    }
-
-    // -------------------------------------------------------------------------
-    // Jalebi Cognitive Loop (JCL)
-    // -------------------------------------------------------------------------
-
-    fun createJalebiLoop(
-        goal: String,
-        maxIterations: Int = 8
-    ): Int = nativeCreateJalebiLoop(goal, maxIterations)
-
+    // ---------------------------------------------------------------------
+    // Jalebi Cognitive Loop: bounded lifecycle + semantic perception input.
+    // ---------------------------------------------------------------------
+    fun createJalebiLoop(goal: String, maxIterations: Int = 8): Int = nativeCreateJalebiLoop(goal, maxIterations)
     fun startJalebiLoop(loopId: Int): Boolean = nativeStartJalebiLoop(loopId)
     fun pauseJalebiLoop(loopId: Int): Boolean = nativePauseJalebiLoop(loopId)
     fun resumeJalebiLoop(loopId: Int): Boolean = nativeResumeJalebiLoop(loopId)
@@ -91,21 +48,20 @@ class NativeBridge {
     fun completeJalebiLoop(loopId: Int): Boolean = nativeCompleteJalebiLoop(loopId)
     fun failJalebiLoop(loopId: Int, reason: String): Boolean = nativeFailJalebiLoop(loopId, reason)
 
-    /** Execute one bounded lifecycle iteration and return inspectable history JSON. */
-    fun executeJalebiIteration(loopId: Int, input: String): String =
-        nativeExecuteJalebiIteration(loopId, input)
+    fun executeJalebiIteration(loopId: Int, input: String): String = nativeExecuteJalebiIteration(loopId, input)
+    fun evaluateJalebiLoop(loopId: Int, confidence: Float, goalCompleted: Boolean, evaluation: String, nextAction: String, memoryUpdates: String = ""): Boolean =
+        nativeEvaluateJalebiLoop(loopId, confidence, goalCompleted, evaluation, nextAction, memoryUpdates)
 
-    /** Record external evaluation/model evidence; JCL owns the next state decision. */
-    fun evaluateJalebiLoop(
-        loopId: Int,
-        confidence: Float,
-        goalCompleted: Boolean,
-        evaluation: String,
-        nextAction: String,
-        memoryUpdates: String = ""
-    ): Boolean = nativeEvaluateJalebiLoop(
-        loopId, confidence, goalCompleted, evaluation, nextAction, memoryUpdates
-    )
+    /**
+     * Submit semantic camera output. `objects` and `text` are pipe-separated;
+     * raw frames never cross JNI or enter JCL history.
+     */
+    fun submitJalebiVision(loopId: Int, sceneId: String, objects: List<String>, text: List<String>, confidence: Float, flagshipDevice: Boolean = false): String =
+        nativeSubmitJalebiVision(loopId, sceneId, objects.filter { it.isNotBlank() }.joinToString("|"), text.filter { it.isNotBlank() }.joinToString("|"), confidence.coerceIn(0f, 1f), getRAMUsagePercentage(), getCPUUsage(), getTemperature(), getBatteryLevel(), flagshipDevice)
+
+    /** Submit only final STT text; partial speech is rejected by native policy. */
+    fun submitJalebiSpeech(loopId: Int, transcript: String, confidence: Float, isFinal: Boolean, flagshipDevice: Boolean = false): String =
+        nativeSubmitJalebiSpeech(loopId, transcript, confidence.coerceIn(0f, 1f), isFinal, getRAMUsagePercentage(), getCPUUsage(), getTemperature(), getBatteryLevel(), flagshipDevice)
 
     fun getJalebiLoopState(loopId: Int): String = nativeGetJalebiLoopState(loopId)
     fun getJalebiConfidence(loopId: Int): Float = nativeGetJalebiConfidence(loopId)
@@ -117,12 +73,10 @@ class NativeBridge {
     private external fun nativeGetVersion(nativeHandle: Long): String
     private external fun nativeGetRuntimeStatus(nativeHandle: Long): String
     private external fun nativeGetDeviceProfile(nativeHandle: Long): String
-
     private external fun nativeLoadModel(nativeHandle: Long, modelName: String): Boolean
     private external fun nativeUnloadModel(nativeHandle: Long, modelName: String): Boolean
     private external fun nativeGenerate(nativeHandle: Long, prompt: String, modelName: String, temperature: Float, maxTokens: Int): String
     private external fun nativeStopGeneration(nativeHandle: Long)
-
     private external fun nativeGetTotalRAM(nativeHandle: Long): Long
     private external fun nativeGetAvailableRAM(nativeHandle: Long): Long
     private external fun nativeGetRAMUsagePercentage(nativeHandle: Long): Float
@@ -137,6 +91,8 @@ class NativeBridge {
     private external fun nativePauseJalebiLoop(loopId: Int): Boolean
     private external fun nativeResumeJalebiLoop(loopId: Int): Boolean
     private external fun nativeCancelJalebiLoop(loopId: Int): Boolean
+    private external fun nativeSubmitJalebiVision(loopId: Int, sceneId: String, objects: String, text: String, confidence: Float, ram: Float, cpu: Float, temperature: Float, battery: Float, flagship: Boolean): String
+    private external fun nativeSubmitJalebiSpeech(loopId: Int, transcript: String, confidence: Float, isFinal: Boolean, ram: Float, cpu: Float, temperature: Float, battery: Float, flagship: Boolean): String
     private external fun nativeExecuteJalebiIteration(loopId: Int, input: String): String
     private external fun nativeEvaluateJalebiLoop(loopId: Int, confidence: Float, goalCompleted: Boolean, evaluation: String, nextAction: String, memoryUpdates: String): Boolean
     private external fun nativeGetJalebiLoopState(loopId: Int): String
