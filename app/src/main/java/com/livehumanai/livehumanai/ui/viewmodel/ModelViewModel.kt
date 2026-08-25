@@ -134,6 +134,25 @@ class ModelViewModel @Inject constructor(
         }
     }
 
+    fun downloadHuggingFaceModel(repoId: String, filename: String, targetDir: java.io.File) {
+        viewModelScope.launch {
+            try {
+                val targetFile = java.io.File(targetDir, filename)
+                _downloadProgress.value = _downloadProgress.value + (filename to 0f)
+                val success = modelRepository.downloadHuggingFaceModel(repoId, filename, targetFile) { _, _, progress ->
+                    _downloadProgress.value = _downloadProgress.value + (filename to progress)
+                }
+                _downloadProgress.value = _downloadProgress.value - filename
+                if (success) {
+                    loadModels()
+                    loadInstalledModels()
+                }
+            } catch (e: Exception) {
+                _downloadProgress.value = _downloadProgress.value - filename
+            }
+        }
+    }
+
     fun downloadModel(modelName: String) {
         viewModelScope.launch {
             try {
