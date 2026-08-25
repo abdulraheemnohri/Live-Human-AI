@@ -7,9 +7,41 @@ import javax.inject.Inject
 /**
  * ModelRepository provides data access for AI models.
  */
+import com.livehumanai.livehumanai.utils.HuggingFaceDownloader
+import java.io.File
+
 class ModelRepository @Inject constructor(
-    private val modelDao: ModelDao
+    private val modelDao: ModelDao,
+    private val hfDownloader: HuggingFaceDownloader
 ) {
+
+    suspend fun downloadHuggingFaceModel(
+        repoId: String,
+        filename: String,
+        targetFile: File,
+        onProgress: (Long, Long, Float) -> Unit
+    ): Boolean {
+        val success = hfDownloader.downloadModel(repoId, filename, targetFile, onProgress)
+        if (success) {
+            val modelName = filename.substringBeforeLast(".")
+            modelDao.insertModel(
+                ModelEntity(
+                    name = modelName,
+                    version = "1.0",
+                    type = if (filename.endsWith(".onnx")) ModelEntity.ModelType.VISION else ModelEntity.ModelType.LLM,
+                    size = targetFile.length(),
+                    format = filename.substringAfterLast(".").uppercase(),
+                    quantization = if (filename.contains("q4", true)) "Q4" else "FP16",
+                    ramRequirement = 1000000000,
+                    license = "Apache 2.0",
+                    source = repoId,
+                    checksum = "hf_${filename.hashCode()}",
+                    isInstalled = true
+                )
+            )
+        }
+        return success
+    }
 
     suspend fun addModel(model: ModelEntity) {
         modelDao.insertModel(model)

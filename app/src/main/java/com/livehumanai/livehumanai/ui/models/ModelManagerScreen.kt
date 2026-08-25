@@ -9,9 +9,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.livehumanai.livehumanai.ui.theme.LiveHumanAITheme
+import com.livehumanai.livehumanai.ui.viewmodel.ModelViewModel
 
 data class ModelInfo(
     val name: String,
@@ -23,7 +26,8 @@ data class ModelInfo(
 )
 
 @Composable
-fun ModelManagerScreen() {
+fun ModelManagerScreen(viewModel: ModelViewModel = hiltViewModel()) {
+    val context = LocalContext.current
     var allModels by remember {
         mutableStateOf(
             listOf(
@@ -36,6 +40,13 @@ fun ModelManagerScreen() {
     }
     var selectedPerformanceMode by remember { mutableStateOf("Balanced") }
 
+    var hfRepoId by remember { mutableStateOf("Qwen/Qwen2.5-0.5B-Instruct-GGUF") }
+    var hfFilename by remember { mutableStateOf("qwen2.5-0.5b-instruct-q4_k_m.gguf") }
+
+    val downloadProgressMap by viewModel.downloadProgress.collectAsState()
+    val isHfDownloading = downloadProgressMap.containsKey(hfFilename)
+    val hfProgress = downloadProgressMap[hfFilename] ?: 0f
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -43,6 +54,38 @@ fun ModelManagerScreen() {
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text("AI Model Manager", style = MaterialTheme.typography.headlineMedium)
+
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Hugging Face Model Downloader", style = MaterialTheme.typography.titleMedium)
+                OutlinedTextField(
+                    value = hfRepoId,
+                    onValueChange = { hfRepoId = it },
+                    label = { Text("Repo ID") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = hfFilename,
+                    onValueChange = { hfFilename = it },
+                    label = { Text("Filename (.gguf / .onnx)") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                if (isHfDownloading) {
+                    LinearProgressIndicator(progress = { hfProgress }, modifier = Modifier.fillMaxWidth())
+                }
+                Button(
+                    onClick = {
+                        viewModel.downloadHuggingFaceModel(hfRepoId, hfFilename, context.filesDir)
+                    },
+                    enabled = !isHfDownloading && hfRepoId.isNotBlank() && hfFilename.isNotBlank(),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Default.Download, contentDescription = "Download")
+                    Spacer(Modifier.width(8.dp))
+                    Text(if (isHfDownloading) "Downloading (${(hfProgress * 100).toInt()}%)..." else "Download from Hugging Face")
+                }
+            }
+        }
 
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {

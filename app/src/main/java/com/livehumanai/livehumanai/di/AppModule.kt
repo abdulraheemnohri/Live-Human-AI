@@ -79,8 +79,17 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideModelRepository(modelDao: ModelDao): ModelRepository {
-        return ModelRepository(modelDao)
+    fun provideHuggingFaceDownloader(): com.livehumanai.livehumanai.utils.HuggingFaceDownloader {
+        return com.livehumanai.livehumanai.utils.HuggingFaceDownloader()
+    }
+
+    @Provides
+    @Singleton
+    fun provideModelRepository(
+        modelDao: ModelDao,
+        hfDownloader: com.livehumanai.livehumanai.utils.HuggingFaceDownloader
+    ): ModelRepository {
+        return ModelRepository(modelDao, hfDownloader)
     }
 
     @Provides
