@@ -16,6 +16,7 @@ class JalebiNativeAudio {
 public:
     JalebiConversationLoop::State onSpeech(const NativeSpeechResult& result) {
         if (!result.isFinal || result.transcript.empty()) return m_loop.state();
+        m_lastConfidence = result.confidence;
         return m_loop.onSpeech(result.transcript);
     }
 
@@ -25,10 +26,12 @@ public:
     JalebiConversationLoop::State responseReady() { return m_loop.onResponseReady(); }
     JalebiConversationLoop::State speechFinished() { return m_loop.onSpeechFinished(); }
     const std::string& transcript() const { return m_loop.lastTranscript(); }
+    float confidence() const { return m_lastConfidence; }
     JalebiConversationLoop::State state() const { return m_loop.state(); }
 
 private:
     JalebiConversationLoop m_loop;
+    float m_lastConfidence = 0.0f;
 };
 
 } // namespace LiveHumanAI
