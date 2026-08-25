@@ -14,8 +14,7 @@ class AIRepository @Inject constructor(
     fun getDeviceProfile(): String = nativeBridge.getDeviceProfile()
     fun loadModel(modelName: String): Boolean = nativeBridge.loadModel(modelName)
     fun unloadModel(modelName: String): Boolean = nativeBridge.unloadModel(modelName)
-    fun generate(prompt: String, modelName: String = "", temperature: Float = 0.7f, maxTokens: Int = 512): String =
-        nativeBridge.generate(prompt, modelName, temperature, maxTokens)
+    fun generate(prompt: String, modelName: String = "", temperature: Float = 0.7f, maxTokens: Int = 512): String = nativeBridge.generate(prompt, modelName, temperature, maxTokens)
     fun stopGeneration() = nativeBridge.stopGeneration()
     fun getTotalRAM(): Long = nativeBridge.getTotalRAM()
     fun getAvailableRAM(): Long = nativeBridge.getAvailableRAM()
@@ -35,21 +34,21 @@ class AIRepository @Inject constructor(
     fun completeJalebiLoop(loopId: Int): Boolean = nativeBridge.completeJalebiLoop(loopId)
     fun failJalebiLoop(loopId: Int, reason: String): Boolean = nativeBridge.failJalebiLoop(loopId, reason)
     fun executeJalebiIteration(loopId: Int, input: String): String = nativeBridge.executeJalebiIteration(loopId, input)
-    fun evaluateJalebiLoop(loopId: Int, confidence: Float, goalCompleted: Boolean, evaluation: String, nextAction: String, memoryUpdates: String = ""): Boolean =
-        nativeBridge.evaluateJalebiLoop(loopId, confidence, goalCompleted, evaluation, nextAction, memoryUpdates)
+    fun evaluateJalebiLoop(loopId: Int, confidence: Float, goalCompleted: Boolean, evaluation: String, nextAction: String, memoryUpdates: String = ""): Boolean = nativeBridge.evaluateJalebiLoop(loopId, confidence, goalCompleted, evaluation, nextAction, memoryUpdates)
     fun getJalebiLoopState(loopId: Int): String = nativeBridge.getJalebiLoopState(loopId)
     fun getJalebiConfidence(loopId: Int): Float = nativeBridge.getJalebiConfidence(loopId)
     fun getJalebiIteration(loopId: Int): Int = nativeBridge.getJalebiIteration(loopId)
     fun getJalebiHistory(loopId: Int): String = nativeBridge.getJalebiHistory(loopId)
 
-    /** Resource gate used before an expensive autonomous iteration. */
-    fun shouldPauseJalebiForResources(): Boolean =
-        getRAMUsagePercentage() >= 92f || getTemperature() >= 45f
+    // Semantic live inputs. Raw camera/audio data never enters the JCL history.
+    fun submitJalebiVision(loopId: Int, sceneId: String, objects: List<String>, text: List<String>, confidence: Float, flagshipDevice: Boolean = isHighEndDevice()): String =
+        nativeBridge.submitJalebiVision(loopId, sceneId, objects, text, confidence, flagshipDevice)
 
-    /** Conservative degraded-mode gate for hot/high-memory devices. */
-    fun shouldReduceJalebiWorkload(): Boolean =
-        getRAMUsagePercentage() >= 82f || getCPUUsage() >= 92f ||
-            getTemperature() >= 40f || getBatteryLevel() <= 10f
+    fun submitJalebiSpeech(loopId: Int, transcript: String, confidence: Float, isFinal: Boolean, flagshipDevice: Boolean = isHighEndDevice()): String =
+        nativeBridge.submitJalebiSpeech(loopId, transcript, confidence, isFinal, flagshipDevice)
+
+    fun shouldPauseJalebiForResources(): Boolean = getRAMUsagePercentage() >= 92f || getTemperature() >= 45f
+    fun shouldReduceJalebiWorkload(): Boolean = getRAMUsagePercentage() >= 82f || getCPUUsage() >= 92f || getTemperature() >= 40f || getBatteryLevel() <= 10f
 
     fun formatBytes(bytes: Long): String = when {
         bytes >= 1024 * 1024 * 1024 -> "%.2f GB".format(bytes / (1024f * 1024 * 1024))
@@ -57,7 +56,6 @@ class AIRepository @Inject constructor(
         bytes >= 1024 -> "%.2f KB".format(bytes / 1024f)
         else -> "$bytes B"
     }
-
     fun formatPercentage(value: Float): String = "%.1f%%".format(value)
     fun formatTemperature(celsius: Float): String = "%.1f°C".format(celsius)
 
