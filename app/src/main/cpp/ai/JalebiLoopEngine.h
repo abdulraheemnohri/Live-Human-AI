@@ -57,10 +57,8 @@ public:
 
     JalebiLoopEngine();
     ~JalebiLoopEngine();
-
     bool initialize();
     void shutdown();
-
     int createLoop(const std::string& goal, int maxIterations = 8, float successConfidence = 0.90f);
     bool startLoop(int loopId);
     bool pauseLoop(int loopId);
@@ -68,18 +66,9 @@ public:
     bool cancelLoop(int loopId);
     bool completeLoop(int loopId);
     bool failLoop(int loopId, const std::string& reason);
-
+    bool safetyBlockLoop(int loopId, const std::string& reason);
     Iteration executeIteration(int loopId, const std::string& currentInput);
-
-    bool recordEvaluation(
-        int loopId,
-        float confidence,
-        bool goalCompleted,
-        const std::string& evaluation,
-        const std::string& nextAction,
-        const std::string& memoryUpdates = ""
-    );
-
+    bool recordEvaluation(int loopId, float confidence, bool goalCompleted, const std::string& evaluation, const std::string& nextAction, const std::string& memoryUpdates = "");
     LoopState getLoopState(int loopId) const;
     float getLatestConfidence(int loopId) const;
     int getCurrentIteration(int loopId) const;
@@ -99,12 +88,10 @@ private:
         long long updatedAtMs = 0;
         std::vector<Iteration> history;
     };
-
     static long long nowMs();
     static std::string jsonEscape(const std::string& value);
     static int clampMaxIterations(int maxIterations);
     static float clampConfidence(float confidence);
-
     mutable std::mutex m_mutex;
     std::unordered_map<int, LoopContext> m_loops;
     int m_nextLoopId;
@@ -112,5 +99,4 @@ private:
 };
 
 } // namespace LiveHumanAI
-
-#endif // JALEBI_LOOP_ENGINE_H
+#endif
