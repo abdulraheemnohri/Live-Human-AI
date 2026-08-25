@@ -5,133 +5,57 @@ import android.hardware.camera2.CameraAccessException
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraManager
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageAnalysis
 import androidx.camera.view.LifecycleCameraController
 import androidx.camera.view.PreviewView
+import androidx.lifecycle.LifecycleOwner
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.LifecycleOwner
+import com.livehumanai.livehumanai.jalebi.JalebiCameraAnalyzer
 
-/**
- * CameraManager manages the camera functionality for the app.
- * It handles camera initialization, switching, and frame processing.
- */
 class CameraManager(private val context: Context) {
-
     private val cameraManager = context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
     private var cameraController: LifecycleCameraController? = null
     private var previewView: PreviewView? = null
+    var isCameraAvailable by mutableStateOf(false); private set
+    var isCameraActive by mutableStateOf(false); private set
+    var currentCameraSelector by mutableStateOf(CameraSelector.DEFAULT_BACK_CAMERA); private set
+    var isFlashEnabled by mutableStateOf(false); private set
+    var availableCameras by mutableStateOf(listOf<CameraInfo>()); private set
 
-    // State
-    var isCameraAvailable by mutableStateOf(false)
-        private set
-
-    var isCameraActive by mutableStateOf(false)
-        private set
-
-    var currentCameraSelector by mutableStateOf(CameraSelector.DEFAULT_BACK_CAMERA)
-        private set
-
-    var isFlashEnabled by mutableStateOf(false)
-        private set
-
-    var availableCameras by mutableStateOf(listOf<CameraInfo>())
-        private set
-
-    // Initialize camera
     fun initialize(previewView: PreviewView, lifecycleOwner: LifecycleOwner) {
         this.previewView = previewView
-
         try {
-            // Get available cameras
-            val cameraIds = cameraManager.cameraIdList
-            availableCameras = cameraIds.map { cameraId ->
-                val characteristics = cameraManager.getCameraCharacteristics(cameraId)
-                CameraInfo(
-                    id = cameraId,
-                    isBackCamera = characteristics.get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_BACK,
-                    isFrontCamera = characteristics.get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_FRONT
-                )
+            availableCameras = cameraManager.cameraIdList.map { id ->
+                val c = cameraManager.getCameraCharacteristics(id)
+                CameraInfo(id, c.get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_BACK, c.get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_FRONT)
             }
-
             isCameraAvailable = availableCameras.isNotEmpty()
-
-            // Create camera controller
             cameraController = LifecycleCameraController(context).apply {
                 cameraSelector = currentCameraSelector
                 bindToLifecycle(lifecycleOwner)
             }
-
-            // Set up preview
-            cameraController?.let { controller ->
-                previewView.controller = controller
-            }
-
+            cameraController?.let { previewView.controller = it }
             isCameraActive = true
-        } catch (e: CameraAccessException) {
-            isCameraAvailable = false
-            isCameraActive = false
-        }
+        } catch (_: CameraAccessException) { isCameraAvailable = false; isCameraActive = false }
     }
 
-    // Start camera
-    fun startCamera() {
-        if (isCameraAvailable && !isCameraActive) {
-            val owner = previewView?.context as? LifecycleOwner
-            if (owner != null) {
-                cameraController?.bindToLifecycle(owner)
-                isCameraActive = true
-            }
-        }
+    fun setupFrameAnalysis(onFrame: (JalebiCameraAnalyzer.FrameSignal) -> Unit, intervalMs: Long = 500L) {
+        cameraController?.setImageAnalysisAnalyzer(
+            context.mainExecutor,
+            JalebiCameraAnalyzer(intervalMs, onFrame)
+        )
     }
 
-    // Stop camera
-    fun stopCamera() {
-        if (isCameraActive) {
-            cameraController?.unbind()
-            isCameraActive = false
-        }
-    }
+    fun clearFrameAnalysis() { cameraController?.clearImageAnalysisAnalyzer() }
 
-    // Switch camera
-    fun switchCamera() {
-        currentCameraSelector = if (currentCameraSelector == CameraSelector.DEFAULT_BACK_CAMERA) {
-            CameraSelector.DEFAULT_FRONT_CAMERA
-        } else {
-            CameraSelector.DEFAULT_BACK_CAMERA
-        }
+    fun startCamera() { if (isCameraAvailable && !isCameraActive) { previewView?.let { cameraController?.bindToLifecycle(it.context as LifecycleOwner); isCameraActive = true } } }
+    fun stopCamera() { if (isCameraActive) { cameraController?.unbind(); isCameraActive = false } }
+    fun switchCamera() { currentCameraSelector = if (currentCameraSelector == CameraSelector.DEFAULT_BACK_CAMERA) CameraSelector.DEFAULT_FRONT_CAMERA else CameraSelector.DEFAULT_BACK_CAMERA; cameraController?.cameraSelector = currentCameraSelector }
+    fun toggleFlash() { isFlashEnabled = !isFlashEnabled; cameraController?.enableTorch(isFlashEnabled) }
+    fun captureImage() { }
+    fun cleanup() { stopCamera(); cameraController = null; previewView = null }
 
-        cameraController?.cameraSelector = currentCameraSelector
-    }
-
-    // Toggle flash
-    fun toggleFlash() {
-        isFlashEnabled = !isFlashEnabled
-        cameraController?.enableTorch(isFlashEnabled)
-    }
-
-    // Capture image
-    fun captureImage() {
-        // In a real implementation, this would capture an image
-    }
-
-    // Set up frame analysis
-    fun setupFrameAnalysis() {
-        // In a real implementation, this would set up a frame analyzer
-    }
-
-    // Cleanup
-    fun cleanup() {
-        stopCamera()
-        cameraController = null
-        previewView = null
-    }
-
-    // Data classes
-
-    data class CameraInfo(
-        val id: String,
-        val isBackCamera: Boolean,
-        val isFrontCamera: Boolean
-    )
+    data class CameraInfo(val id: String, val isBackCamera: Boolean, val isFrontCamera: Boolean)
 }
