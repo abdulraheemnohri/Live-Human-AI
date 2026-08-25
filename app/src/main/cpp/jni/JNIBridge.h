@@ -24,6 +24,7 @@ JNIEXPORT jint JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridg
 JNIEXPORT jboolean JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeStartJalebiLoop(JNIEnv*, jobject, jint);
 JNIEXPORT jboolean JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativePauseJalebiLoop(JNIEnv*, jobject, jint);
 JNIEXPORT jboolean JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeResumeJalebiLoop(JNIEnv*, jobject, jint);
+JNIEXPORT jboolean JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeReplanJalebiLoop(JNIEnv*, jobject, jint, jstring);
 JNIEXPORT jboolean JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeCancelJalebiLoop(JNIEnv*, jobject, jint);
 JNIEXPORT jstring JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeSubmitJalebiVision(JNIEnv*, jobject, jint, jstring, jstring, jstring, jfloat, jfloat, jfloat, jfloat, jfloat, jboolean);
 JNIEXPORT jstring JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeSubmitJalebiSpeech(JNIEnv*, jobject, jint, jstring, jfloat, jboolean, jfloat, jfloat, jfloat, jfloat, jboolean);
