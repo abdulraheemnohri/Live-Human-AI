@@ -30,11 +30,3 @@ data class JalebiTelemetry(
             else -> state
         }
 }
-
-/** Thread-safe holder used by developer UI; only metadata is retained. */
-class JalebiTelemetryStore {
-    @Volatile private var current = JalebiTelemetry()
-    fun update(value: JalebiTelemetry) { current = value.copy(confidence = value.confidence.coerceIn(0f, 1f)) }
-    fun snapshot(): JalebiTelemetry = current
-    fun clear() { current = JalebiTelemetry() }
-}
