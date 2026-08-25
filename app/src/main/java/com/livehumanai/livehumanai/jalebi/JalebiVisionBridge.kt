@@ -27,7 +27,7 @@ class NativeJalebiVisionBridge(
         fun array(key: String): List<String> = Regex("\\\"$key\\\"\\s*:\\s*\\[([^]]*)]").find(json)?.groupValues?.get(1)?.split(',')?.mapNotNull {
             it.trim().removePrefix("\\\"").removeSuffix("\\\"").takeIf(String::isNotBlank)
         } ?: emptyList()
-        return JalebiVisionResult(string("sceneId").ifBlank { signal.timestampNs.toString() }, array("objects"), array("text"), number("confidence").coerceIn(0f, 1f), signal.timestampMs)
+        return JalebiVisionResult(string("sceneId").ifBlank { signal.timestampNs.toString() }, array("objects"), array("text"), "", number("confidence").coerceIn(0f, 1f), signal.timestampMs)
     }
 }
 

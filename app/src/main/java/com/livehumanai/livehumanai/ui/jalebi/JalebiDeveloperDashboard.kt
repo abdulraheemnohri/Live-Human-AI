@@ -39,7 +39,7 @@ fun JalebiDeveloperDashboard(
 
     Column(modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text("Jalebi Cognitive Loop", style = MaterialTheme.typography.headlineSmall)
-        Text(if (active) "● ${telemetry.activeStage}" else telemetry.activeStage, style = MaterialTheme.typography.titleMedium.copy(alpha = if (active) pulse else 1f))
+        Text(if (active) "● ${telemetry.activeStage}" else telemetry.activeStage, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground.copy(alpha = if (active) pulse else 1f))
         LinearProgressIndicator(progress = { telemetry.confidence.coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth())
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             MetricCard("Iteration", telemetry.iteration.toString(), Modifier.weight(1f))

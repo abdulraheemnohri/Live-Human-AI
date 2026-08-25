@@ -5,6 +5,7 @@ import android.content.Context
 import android.os.BatteryManager
 import android.os.Build
 import android.os.PowerManager
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -25,7 +26,7 @@ data class JalebiDeviceResourceSnapshot(
 }
 
 @Singleton
-class JalebiResourceMonitor @Inject constructor(private val context: Context) {
+class JalebiResourceMonitor @Inject constructor(@ApplicationContext private val context: Context) {
     suspend fun snapshot(): JalebiDeviceResourceSnapshot = withContext(Dispatchers.Default) {
         val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
         val memory = ActivityManager.MemoryInfo().also(activityManager::getMemoryInfo)
@@ -35,7 +36,7 @@ class JalebiResourceMonitor @Inject constructor(private val context: Context) {
         val thermal = if (Build.VERSION.SDK_INT >= 29) power.currentThermalStatus else 0
         JalebiDeviceResourceSnapshot(
             availableMemoryMb = memory.availMem / (1024L * 1024L),
-            memoryPressure = memory.low,
+            memoryPressure = memory.lowMemory,
             batteryPercent = batteryPercent,
             charging = battery.isCharging,
             thermalStatus = thermal,
