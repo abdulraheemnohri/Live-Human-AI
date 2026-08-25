@@ -31,6 +31,7 @@ class NativeBridge {
     fun startJalebiLoop(loopId: Int): Boolean = nativeStartJalebiLoop(loopId)
     fun pauseJalebiLoop(loopId: Int): Boolean = nativePauseJalebiLoop(loopId)
     fun resumeJalebiLoop(loopId: Int): Boolean = nativeResumeJalebiLoop(loopId)
+    fun replanJalebiLoop(loopId: Int, reason: String = "low_confidence"): Boolean = nativeReplanJalebiLoop(loopId, reason)
     fun cancelJalebiLoop(loopId: Int): Boolean = nativeCancelJalebiLoop(loopId)
     fun completeJalebiLoop(loopId: Int): Boolean = nativeCompleteJalebiLoop(loopId)
     fun failJalebiLoop(loopId: Int, reason: String): Boolean = nativeFailJalebiLoop(loopId, reason)
@@ -69,6 +70,7 @@ class NativeBridge {
     private external fun nativeStartJalebiLoop(loopId: Int): Boolean
     private external fun nativePauseJalebiLoop(loopId: Int): Boolean
     private external fun nativeResumeJalebiLoop(loopId: Int): Boolean
+    private external fun nativeReplanJalebiLoop(loopId: Int, reason: String): Boolean
     private external fun nativeCancelJalebiLoop(loopId: Int): Boolean
     private external fun nativeSubmitJalebiVision(loopId: Int, sceneId: String, objects: String, text: String, confidence: Float, ram: Float, cpu: Float, temperature: Float, battery: Float, flagship: Boolean): String
     private external fun nativeSubmitJalebiSpeech(loopId: Int, transcript: String, confidence: Float, isFinal: Boolean, ram: Float, cpu: Float, temperature: Float, battery: Float, flagship: Boolean): String

@@ -13,7 +13,7 @@
 #include <opencv2/core.hpp>
 #endif
 
-static LiveHumanAI::JalebiNativeRuntime g_jalebiRuntime;
+LiveHumanAI::JalebiNativeRuntime g_jalebiRuntime;
 static NativeCore* g_nativeCore = nullptr;
 static SpeechManager g_speechManager;
 static VisionManager g_visionManager;
@@ -68,6 +68,7 @@ JNIEXPORT jint JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridg
 JNIEXPORT jboolean JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeStartJalebiLoop(JNIEnv*,jobject,jint id){return id==g_jalebiRuntime.activeLoop()&&g_jalebiRuntime.start()?JNI_TRUE:JNI_FALSE;}
 JNIEXPORT jboolean JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativePauseJalebiLoop(JNIEnv*,jobject,jint id){return id==g_jalebiRuntime.activeLoop()&&g_jalebiRuntime.pause()?JNI_TRUE:JNI_FALSE;}
 JNIEXPORT jboolean JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeResumeJalebiLoop(JNIEnv*,jobject,jint id){return id==g_jalebiRuntime.activeLoop()&&g_jalebiRuntime.resume()?JNI_TRUE:JNI_FALSE;}
+JNIEXPORT jboolean JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeReplanJalebiLoop(JNIEnv* e,jobject,jint id,jstring reason){if(id!=g_jalebiRuntime.activeLoop()||!g_jalebiRuntime.initialized())return JNI_FALSE;return g_jalebiRuntime.engine().replanLoop(id,reason?jstringToString(e,reason):std::string("replan_requested"))?JNI_TRUE:JNI_FALSE;}
 JNIEXPORT jboolean JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeCancelJalebiLoop(JNIEnv*,jobject,jint id){return id==g_jalebiRuntime.activeLoop()&&g_jalebiRuntime.cancel()?JNI_TRUE:JNI_FALSE;}
 JNIEXPORT jstring JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeSubmitJalebiVision(JNIEnv* e,jobject,jint id,jstring sceneId,jstring objects,jstring text,jfloat confidence,jfloat ram,jfloat cpu,jfloat temperature,jfloat battery,jboolean flagship){if(id!=g_jalebiRuntime.activeLoop())return stringToJstring(e,"{\"runInference\":false,\"reason\":\"invalid_loop\"}");return stringToJstring(e,g_jalebiRuntime.submitVision(jstringToString(e,sceneId),jstringToString(e,objects),jstringToString(e,text),confidence,resources(ram,cpu,temperature,battery),flagship==JNI_TRUE));}
 JNIEXPORT jstring JNICALL Java_com_livehumanai_livehumanai_nativebridge_NativeBridge_nativeSubmitJalebiSpeech(JNIEnv* e,jobject,jint id,jstring transcript,jfloat confidence,jboolean isFinal,jfloat ram,jfloat cpu,jfloat temperature,jfloat battery,jboolean flagship){if(id!=g_jalebiRuntime.activeLoop())return stringToJstring(e,"{\"runInference\":false,\"reason\":\"invalid_loop\"}");return stringToJstring(e,g_jalebiRuntime.submitSpeech(jstringToString(e,transcript),confidence,isFinal==JNI_TRUE,resources(ram,cpu,temperature,battery),flagship==JNI_TRUE));}

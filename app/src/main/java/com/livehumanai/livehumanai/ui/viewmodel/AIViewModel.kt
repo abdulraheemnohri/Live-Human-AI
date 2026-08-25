@@ -43,11 +43,7 @@ class AIViewModel @Inject constructor(
         startPerformanceMonitoring()
     }
 
-    override fun onCleared() {
-        jalebiLiveController.stop()
-        aiRepository.shutdown()
-        super.onCleared()
-    }
+    override fun onCleared() { jalebiLiveController.stop(); aiRepository.shutdown(); super.onCleared() }
 
     fun generateResponse(prompt: String, conversationId: Long? = null, modelName: String = "") {
         viewModelScope.launch {
@@ -56,69 +52,56 @@ class AIViewModel @Inject constructor(
                 val response = aiRepository.generate(prompt, modelName, settingsRepository.getTemperature(), settingsRepository.getMaxTokens())
                 conversationId?.let { conversationRepository.addMessageToConversation(it, response, false) }
                 _aiState.value = AIState.Response(response)
-            } catch (e: Exception) {
-                _aiState.value = AIState.Error(e.message ?: "Unknown error")
-            }
+            } catch (e: Exception) { _aiState.value = AIState.Error(e.message ?: "Unknown error") }
         }
     }
 
     fun stopGeneration() { aiRepository.stopGeneration(); _aiState.value = AIState.Idle }
 
     fun startJalebiLoop(goal: String, maxIterations: Int = 8): Boolean {
-        val id = jalebiLiveController.start(goal, maxIterations) ?: run {
-            _jclTelemetry.value = _jclTelemetry.value.copy(state = "FAILED")
-            return false
-        }
-        refreshJalebiLoop(id, goal)
-        return true
+        val id = jalebiLiveController.start(goal, maxIterations) ?: run { _jclTelemetry.value = _jclTelemetry.value.copy(state = "FAILED"); return false }
+        refreshJalebiLoop(id, goal); return true
     }
-
-    fun startLiveJalebi(goal: String = "Continuously understand the current user context", maxIterations: Int = 8): Boolean =
-        startJalebiLoop(goal, maxIterations)
+    fun startLiveJalebi(goal: String = "Continuously understand the current user context", maxIterations: Int = 8): Boolean = startJalebiLoop(goal, maxIterations)
 
     fun submitLivePerception(input: String, evaluation: suspend (String) -> JalebiLiveController.Evaluation) {
         jalebiLiveController.submitPerception(input, evaluation)
-        viewModelScope.launch {
-            delay(25)
-            refreshJalebiLoop(jalebiLiveController.currentLoopId())
-        }
+        viewModelScope.launch { delay(25); refreshJalebiLoop(jalebiLiveController.currentLoopId()) }
     }
 
-    fun stopLiveJalebi() {
-        jalebiLiveController.stop()
-        _jclTelemetry.value = _jclTelemetry.value.copy(state = "CANCELLED", loopId = null)
-    }
-
+    fun stopLiveJalebi() { jalebiLiveController.stop(); _jclTelemetry.value = _jclTelemetry.value.copy(state = "CANCELLED", loopId = null) }
     fun pauseJalebiLoop() { jalebiLiveController.pause(); refreshJalebiLoop() }
     fun resumeJalebiLoop() { jalebiLiveController.resume(); refreshJalebiLoop() }
+    fun replanJalebiLoop(reason: String = "manual_replan") { jalebiLiveController.currentLoopId()?.let { id -> aiRepository.replanJalebiLoop(id, reason); refreshJalebiLoop(id) } }
 
-    fun executeJalebiIteration(input: String) {
-        jalebiLiveController.currentLoopId()?.let { id ->
-            aiRepository.executeJalebiIteration(id, input)
-            refreshJalebiLoop(id)
-        }
-    }
-
+    fun executeJalebiIteration(input: String) { jalebiLiveController.currentLoopId()?.let { id -> aiRepository.executeJalebiIteration(id, input); refreshJalebiLoop(id) } }
     fun evaluateJalebiLoop(confidence: Float, goalCompleted: Boolean, evaluation: String, nextAction: String, memoryUpdates: String = "") {
         jalebiLiveController.currentLoopId()?.let { id ->
             aiRepository.evaluateJalebiLoop(id, confidence, goalCompleted, evaluation, nextAction, memoryUpdates)
+            if (!goalCompleted && confidence < 0.90f) aiRepository.replanJalebiLoop(id, "confidence_below_threshold")
             refreshJalebiLoop(id)
         }
+    }
+
+    /** Execute one bounded model escalation and expose its result to the UI. */
+    fun generateWithConfidenceEscalation(prompt: String, modelName: String = aiRepository.getRecommendedLLMModel(), threshold: Float = 0.90f, maxEscalations: Int = 2, maxTokens: Int = 512, confidence: (String, String) -> Float) {
+        viewModelScope.launch {
+            try {
+                _aiState.value = AIState.Thinking
+                val result = aiRepository.generateWithConfidenceEscalation(prompt, modelName, threshold, maxEscalations, maxTokens, confidence)
+                _aiState.value = if (result.verified) AIState.Response(result.answer) else AIState.Error("AI result could not be verified (confidence %.2f, model %s)".format(result.confidence, result.model))
+                jalebiLiveController.currentLoopId()?.let { refreshJalebiLoop(it) }
+            } catch (e: Exception) { _aiState.value = AIState.Error(e.message ?: "Confidence escalation failed") }
+        }
+    }
+
+    fun evaluateAndReplanIfNeeded(confidence: Float, goalCompleted: Boolean, evaluation: String, nextAction: String, memoryUpdates: String = "") {
+        jalebiLiveController.currentLoopId()?.let { id -> aiRepository.evaluateAndReplanIfNeeded(id, confidence, goalCompleted, evaluation, nextAction, memoryUpdates); refreshJalebiLoop(id) }
     }
 
     fun refreshJalebiLoop(loopId: Int? = jalebiLiveController.currentLoopId(), goal: String = _jclTelemetry.value.goal) {
         loopId ?: return
-        _jclTelemetry.value = _jclTelemetry.value.copy(
-            state = aiRepository.getJalebiLoopState(loopId),
-            iteration = aiRepository.getJalebiIteration(loopId),
-            confidence = aiRepository.getJalebiConfidence(loopId),
-            loopId = loopId,
-            goal = goal,
-            ramPercent = aiRepository.getRAMUsagePercentage(),
-            temperatureC = aiRepository.getTemperature(),
-            historyJson = aiRepository.getJalebiHistory(loopId),
-            model = aiRepository.getRecommendedLLMModel()
-        )
+        _jclTelemetry.value = _jclTelemetry.value.copy(state = aiRepository.getJalebiLoopState(loopId), iteration = aiRepository.getJalebiIteration(loopId), confidence = aiRepository.getJalebiConfidence(loopId), loopId = loopId, goal = goal, ramPercent = aiRepository.getRAMUsagePercentage(), temperatureC = aiRepository.getTemperature(), historyJson = aiRepository.getJalebiHistory(loopId), model = aiRepository.getRecommendedLLMModel())
     }
 
     suspend fun createNewConversation(title: String = "New Conversation"): Long = conversationRepository.createConversation(title).also { _currentConversationId.value = it }
@@ -133,10 +116,7 @@ class AIViewModel @Inject constructor(
 
     private fun startPerformanceMonitoring() = viewModelScope.launch {
         while (true) {
-            _performanceMetrics.value = PerformanceMetrics(
-                aiRepository.getCPUUsage(), aiRepository.getRAMUsagePercentage(), aiRepository.getTemperature(),
-                aiRepository.getBatteryLevel(), aiRepository.getTotalRAM(), aiRepository.getAvailableRAM()
-            )
+            _performanceMetrics.value = PerformanceMetrics(aiRepository.getCPUUsage(), aiRepository.getRAMUsagePercentage(), aiRepository.getTemperature(), aiRepository.getBatteryLevel(), aiRepository.getTotalRAM(), aiRepository.getAvailableRAM())
             if (jalebiLiveController.isRunning()) refreshJalebiLoop()
             delay(1000)
         }
