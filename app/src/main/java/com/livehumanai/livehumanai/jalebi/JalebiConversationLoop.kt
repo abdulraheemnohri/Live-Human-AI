@@ -31,10 +31,3 @@ class JalebiConversationLoop {
     @Synchronized fun onLowConfidenceSpeech(@Suppress("UNUSED_PARAMETER") confidence: Float) { current = State.LISTENING }
     @Synchronized fun onSpeechError() { current = State.ERROR }
 }
-
-/** Compatibility semantic signal used by the conversation orchestrator. */
-data class JalebiAudioSignal(
-    val transcript: String,
-    val confidence: Float,
-    val isFinal: Boolean
-)

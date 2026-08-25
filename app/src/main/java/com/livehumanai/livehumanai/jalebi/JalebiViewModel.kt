@@ -24,7 +24,7 @@ class JalebiViewModel @Inject constructor(
     fun resume() = controller.resume()
     fun stop() = controller.stop()
 
-    fun refreshResources(onResult: (JalebiResourceSnapshot) -> Unit) {
+    fun refreshResources(onResult: (JalebiDeviceResourceSnapshot) -> Unit) {
         viewModelScope.launch { onResult(resources.snapshot()) }
     }
 

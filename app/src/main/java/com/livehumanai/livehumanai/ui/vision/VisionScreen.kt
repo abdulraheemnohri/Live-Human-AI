@@ -17,9 +17,11 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.livehumanai.livehumanai.ui.camera.CameraManager
 import com.livehumanai.livehumanai.ui.viewmodel.AIViewModel
 
+import androidx.compose.ui.platform.LocalLifecycleOwner
+
 @Composable
 fun VisionScreen(viewModel: AIViewModel = hiltViewModel()) {
-    val context=LocalContext.current;val lifecycleOwner=androidx.lifecycle.compose.LocalLifecycleOwner.current;val cameraManager=remember{CameraManager(context)}
+    val context=LocalContext.current;val lifecycleOwner=LocalLifecycleOwner.current;val cameraManager=remember{CameraManager(context)}
     var permissionGranted by remember{mutableStateOf(ContextCompat.checkSelfPermission(context,Manifest.permission.CAMERA)==PackageManager.PERMISSION_GRANTED)}
     val permissionLauncher=rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()){permissionGranted=it};var preview by remember{mutableStateOf<PreviewView?>(null)};val telemetry by viewModel.jclTelemetry.collectAsState()
     LaunchedEffect(Unit){if(!permissionGranted)permissionLauncher.launch(Manifest.permission.CAMERA)}
