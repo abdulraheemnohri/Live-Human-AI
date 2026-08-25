@@ -38,6 +38,31 @@ target_compile_definitions(native-core PRIVATE
     JALEBI_COGNITIVE_LOOP=1
 )
 
+# Optional native ONNX Runtime integration.
+# Set ONNXRUNTIME_ROOT to an Android ONNX Runtime distribution containing
+# include/onnxruntime_cxx_api.h and the ABI-specific shared library.
+set(ONNXRUNTIME_ROOT "${ONNXRUNTIME_ROOT}" CACHE PATH "ONNX Runtime Android root")
+if(ONNXRUNTIME_ROOT)
+    find_path(ONNXRUNTIME_INCLUDE_DIR
+        NAMES onnxruntime_cxx_api.h
+        PATHS "${ONNXRUNTIME_ROOT}/include"
+        NO_DEFAULT_PATH
+    )
+    find_library(ONNXRUNTIME_LIBRARY
+        NAMES onnxruntime
+        PATHS "${ONNXRUNTIME_ROOT}/lib/${ANDROID_ABI}" "${ONNXRUNTIME_ROOT}/lib"
+        NO_DEFAULT_PATH
+    )
+
+    if(ONNXRUNTIME_INCLUDE_DIR AND ONNXRUNTIME_LIBRARY)
+        target_include_directories(native-core PRIVATE ${ONNXRUNTIME_INCLUDE_DIR})
+        target_link_libraries(native-core PRIVATE ${ONNXRUNTIME_LIBRARY})
+        target_compile_definitions(native-core PRIVATE LIVE_HUMAN_AI_HAS_ONNXRUNTIME=1)
+    else()
+        message(WARNING "ONNXRUNTIME_ROOT was supplied but a compatible Android ONNX Runtime include/library pair was not found; vision inference remains unavailable.")
+    endif()
+endif()
+
 target_link_libraries(native-core PRIVATE ${log-lib} c++_shared)
 
 if(ANDROID)
