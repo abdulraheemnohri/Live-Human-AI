@@ -5,6 +5,7 @@
 #include <fstream>
 #include <mutex>
 #include <sstream>
+#include <vector>
 
 #if __has_include(<llama.h>)
 #define LIVE_HUMAN_AI_HAS_LLAMA 1
@@ -54,9 +55,7 @@ public:
         std::lock_guard<std::mutex> lock(m_mutex);
         if (!m_loaded || prompt.empty() || maxTokens <= 0) return {};
 #if LIVE_HUMAN_AI_HAS_LLAMA
-        // The backend is intentionally isolated from policy/orchestration. A full
-        // llama sampler/context is created per generation so cancellation and
-        // context ownership cannot leak into JalebiLoopEngine.
+        (void)temperature;
         llama_context_params ctxParams = llama_context_default_params();
         ctxParams.n_ctx = std::min<uint32_t>(4096u, static_cast<uint32_t>(std::max(512, maxTokens * 2)));
         llama_context* ctx = llama_init_from_model(m_model, ctxParams);
@@ -67,17 +66,11 @@ public:
         if (count < 0) { llama_free(ctx); return {}; }
         tokens.resize(static_cast<std::size_t>(count));
         std::ostringstream out;
-        // Token sampling is kept conservative here; model-specific chat templates
-        // belong in the model adapter layer rather than the JCL engine.
         for (int i = 0; i < maxTokens && !m_stop.load(); ++i) {
-            if (i < static_cast<int>(tokens.size())) {
-                const char* piece = nullptr;
-                char buffer[256];
-                const int n = llama_token_to_piece(vocab, tokens[static_cast<std::size_t>(i)], buffer, sizeof(buffer), 0, true);
-                if (n > 0) out.write(buffer, n);
-            } else {
-                break;
-            }
+            if (i >= static_cast<int>(tokens.size())) break;
+            char buffer[256];
+            const int n = llama_token_to_piece(vocab, tokens[static_cast<std::size_t>(i)], buffer, sizeof(buffer), 0, true);
+            if (n > 0) out.write(buffer, n);
         }
         llama_free(ctx);
         return out.str();
@@ -88,6 +81,7 @@ public:
     }
 
     void stop() override { m_stop.store(true); }
+
     std::size_t memoryBytes() const override {
         std::lock_guard<std::mutex> lock(m_mutex);
         return m_memoryBytes;
