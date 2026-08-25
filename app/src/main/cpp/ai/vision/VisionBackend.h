@@ -1,9 +1,10 @@
 #ifndef LIVE_HUMAN_AI_VISION_BACKEND_H
 #define LIVE_HUMAN_AI_VISION_BACKEND_H
 
+#include <cstddef>
+#include <memory>
 #include <string>
 #include <vector>
-#include <cstddef>
 
 #ifdef HAVE_OPENCV
 #include <opencv2/core.hpp>
