@@ -1,331 +1,122 @@
 #include "LLMManager.h"
 #include "../../utils/Logger.h"
 #include <algorithm>
-#include <thread>
 #include <chrono>
+#include <fstream>
+#include <sstream>
+#include <thread>
 
-LLMManager::LLMManager()
-    : m_defaultTemperature(0.7f),
-      m_defaultTopP(0.9f),
-      m_defaultMaxTokens(512),
-      m_isGenerating(false),
-      m_stopRequested(false) {
+LLMManager::LLMManager() : m_defaultTemperature(0.7f), m_defaultTopP(0.9f), m_defaultMaxTokens(512), m_isGenerating(false), m_stopRequested(false) { initializeAvailableModels(); }
+LLMManager::~LLMManager() { shutdown(); }
 
-    initializeAvailableModels();
-}
-
-LLMManager::~LLMManager() {
-    shutdown();
-}
-
-bool LLMManager::initialize() {
-    // Initialize available models
-    initializeAvailableModels();
-    return true;
-}
+bool LLMManager::initialize() { initializeAvailableModels(); return true; }
 
 void LLMManager::shutdown() {
     std::lock_guard<std::mutex> lock(m_mutex);
-
-    // Unload all models
-    for (const auto& model : m_loadedModels) {
-        unloadModelInternal(model);
-    }
+    for (auto& pair : m_modelStates) if (pair.second.backend) pair.second.backend->unload();
     m_loadedModels.clear();
     m_modelStates.clear();
+    m_isGenerating = false;
+    m_stopRequested = true;
 }
 
 bool LLMManager::loadModel(const std::string& modelName) {
     std::lock_guard<std::mutex> lock(m_mutex);
-
-    // Check if already loaded
-    if (isModelLoaded(modelName)) {
-        return true;
-    }
-
-    // Load the model
-    if (!loadModelFromFile(modelName)) {
-        return false;
-    }
-
-    // Add to loaded models
+    if (modelName.empty() || isModelLoaded(modelName)) return !modelName.empty();
+    if (!loadModelFromFile(modelName)) return false;
     m_loadedModels.push_back(modelName);
-
-    // Initialize model state
-    ModelState state;
-    state.loaded = true;
-    state.context = nullptr; // Placeholder for actual model context
-    state.contextString = "";
-    state.temperature = m_defaultTemperature;
-    state.topP = m_defaultTopP;
-    state.maxTokens = m_defaultMaxTokens;
-    m_modelStates[modelName] = state;
-
     return true;
 }
 
 bool LLMManager::unloadModel(const std::string& modelName) {
     std::lock_guard<std::mutex> lock(m_mutex);
-
-    if (!isModelLoaded(modelName)) {
-        return false;
-    }
-
-    unloadModelInternal(modelName);
-
-    // Remove from loaded models
-    m_loadedModels.erase(
-        std::remove(m_loadedModels.begin(), m_loadedModels.end(), modelName),
-        m_loadedModels.end()
-    );
-
-    // Remove from model states
-    m_modelStates.erase(modelName);
-
+    auto it = m_modelStates.find(modelName);
+    if (it == m_modelStates.end()) return false;
+    if (it->second.backend) it->second.backend->unload();
+    m_modelStates.erase(it);
+    m_loadedModels.erase(std::remove(m_loadedModels.begin(), m_loadedModels.end(), modelName), m_loadedModels.end());
     return true;
 }
 
 bool LLMManager::isModelLoaded(const std::string& modelName) const {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    return std::find(m_loadedModels.begin(), m_loadedModels.end(), modelName) != m_loadedModels.end();
+    return m_modelStates.find(modelName) != m_modelStates.end() && m_modelStates.at(modelName).loaded;
 }
 
-std::vector<std::string> LLMManager::getLoadedModels() const {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    return m_loadedModels;
-}
+std::vector<std::string> LLMManager::getLoadedModels() const { std::lock_guard<std::mutex> lock(m_mutex); return m_loadedModels; }
 
-std::string LLMManager::generate(
-    const std::string& prompt,
-    const std::string& modelName,
-    float temperature,
-    int maxTokens
-) {
-    std::lock_guard<std::mutex> lock(m_mutex);
-
-    if (m_isGenerating) {
-        return "";
-    }
-
-    // Select model
-    std::string selectedModel = modelName.empty() ? m_loadedModels.front() : modelName;
-    if (!isModelLoaded(selectedModel)) {
-        return "Model not loaded: " + selectedModel;
-    }
-
-    m_isGenerating = true;
-    m_stopRequested = false;
-
-    // In a real implementation, this would call the actual LLM inference
-    // For now, return a placeholder response
-    std::string response = "[Generated response from " + selectedModel + ": " + prompt + "]";
-
+std::string LLMManager::generate(const std::string& prompt, const std::string& modelName, float temperature, int maxTokens) {
+    std::unique_lock<std::mutex> lock(m_mutex);
+    if (m_isGenerating || prompt.empty() || m_loadedModels.empty()) return {};
+    const std::string selected = modelName.empty() ? m_loadedModels.front() : modelName;
+    auto it = m_modelStates.find(selected);
+    if (it == m_modelStates.end() || !it->second.backend || !it->second.loaded) return {};
+    std::string effectivePrompt = it->second.contextString.empty() ? prompt : it->second.contextString + "\n" + prompt;
+    const float temp = std::clamp(temperature, 0.0f, 2.0f);
+    const int tokens = std::clamp(maxTokens, 1, 4096);
+    m_isGenerating = true; m_stopRequested = false;
+    LLMBackend* backend = it->second.backend.get();
+    lock.unlock();
+    std::string response = backend->generate(effectivePrompt, temp, tokens);
+    lock.lock();
     m_isGenerating = false;
     return response;
 }
 
-void LLMManager::generateStreaming(
-    const std::string& prompt,
-    std::function<void(const std::string&)> onToken,
-    std::function<void()> onComplete,
-    const std::string& modelName,
-    float temperature,
-    int maxTokens
-) {
-    std::lock_guard<std::mutex> lock(m_mutex);
-
-    if (m_isGenerating) {
-        if (onComplete) onComplete();
-        return;
+void LLMManager::generateStreaming(const std::string& prompt, std::function<void(const std::string&)> onToken, std::function<void()> onComplete, const std::string& modelName, float temperature, int maxTokens) {
+    std::string response = generate(prompt, modelName, temperature, maxTokens);
+    if (!response.empty() && onToken) {
+        std::istringstream stream(response); std::string token;
+        while (stream >> token) { if (m_stopRequested) break; onToken(token + " "); }
     }
-
-    // Select model
-    std::string selectedModel = modelName.empty() ? m_loadedModels.front() : modelName;
-    if (!isModelLoaded(selectedModel)) {
-        if (onComplete) onComplete();
-        return;
-    }
-
-    m_isGenerating = true;
-    m_stopRequested = false;
-
-    // Simulate streaming generation
-    std::string response = "[Streaming response from " + selectedModel + "]";
-    for (size_t i = 0; i < response.size() && !m_stopRequested; ++i) {
-        if (onToken) {
-            onToken(response.substr(i, 1));
-        }
-        // Small delay to simulate streaming
-        std::this_thread::sleep_for(std::chrono::milliseconds(50));
-    }
-
-    m_isGenerating = false;
     if (onComplete) onComplete();
 }
 
 void LLMManager::stopGeneration() {
     std::lock_guard<std::mutex> lock(m_mutex);
     m_stopRequested = true;
-    m_isGenerating = false;
+    for (auto& pair : m_modelStates) if (pair.second.backend) pair.second.backend->stop();
 }
 
-void LLMManager::resetContext(const std::string& modelName) {
-    std::lock_guard<std::mutex> lock(m_mutex);
+void LLMManager::resetContext(const std::string& modelName) { std::lock_guard<std::mutex> lock(m_mutex); if (modelName.empty()) for (auto& p : m_modelStates) p.second.contextString.clear(); else if (m_modelStates.count(modelName)) m_modelStates[modelName].contextString.clear(); }
+void LLMManager::setContext(const std::string& context, const std::string& modelName) { std::lock_guard<std::mutex> lock(m_mutex); if (modelName.empty()) for (auto& p : m_modelStates) p.second.contextString = context; else if (m_modelStates.count(modelName)) m_modelStates[modelName].contextString = context; }
+std::string LLMManager::getContext(const std::string& modelName) const { std::lock_guard<std::mutex> lock(m_mutex); if (modelName.empty() && !m_modelStates.empty()) return m_modelStates.begin()->second.contextString; auto it=m_modelStates.find(modelName); return it==m_modelStates.end()?std::string{}:it->second.contextString; }
 
-    if (modelName.empty()) {
-        for (auto& pair : m_modelStates) {
-            pair.second.contextString = "";
-        }
-    } else if (m_modelStates.find(modelName) != m_modelStates.end()) {
-        m_modelStates[modelName].contextString = "";
-    }
-}
-
-void LLMManager::setContext(const std::string& context, const std::string& modelName) {
-    std::lock_guard<std::mutex> lock(m_mutex);
-
-    if (modelName.empty()) {
-        for (auto& pair : m_modelStates) {
-            pair.second.contextString = context;
-        }
-    } else if (m_modelStates.find(modelName) != m_modelStates.end()) {
-        m_modelStates[modelName].contextString = context;
-    }
-}
-
-std::string LLMManager::getContext(const std::string& modelName) const {
-    std::lock_guard<std::mutex> lock(m_mutex);
-
-    if (modelName.empty() && !m_modelStates.empty()) {
-        return m_modelStates.begin()->second.contextString;
-    }
-
-    auto it = m_modelStates.find(modelName);
-    if (it != m_modelStates.end()) {
-        return it->second.contextString;
-    }
-
-    return "";
-}
-
-LLMManager::ModelInfo LLMManager::getModelInfo(const std::string& modelName) const {
-    for (const auto& model : m_availableModels) {
-        if (model.name == modelName) {
-            return model;
-        }
-    }
-    return ModelInfo{};
-}
-
-std::vector<LLMManager::ModelInfo> LLMManager::getAvailableModels() const {
-    return m_availableModels;
-}
+LLMManager::ModelInfo LLMManager::getModelInfo(const std::string& modelName) const { for (const auto& model:m_availableModels) if(model.name==modelName) return model; return {}; }
+std::vector<LLMManager::ModelInfo> LLMManager::getAvailableModels() const { std::lock_guard<std::mutex> lock(m_mutex); return m_availableModels; }
 
 float LLMManager::benchmarkModel(const std::string& modelName) {
-    // In a real implementation, this would run a benchmark on the model
-    // and return the performance metric (e.g., tokens per second)
-    return 10.0f; // Placeholder value
+    if (!isModelLoaded(modelName)) return 0.0f;
+    const auto start=std::chrono::steady_clock::now();
+    const std::string result=generate("Reply with one short word: OK", modelName, 0.1f, 8);
+    if (result.empty()) return 0.0f;
+    const double seconds=std::chrono::duration<double>(std::chrono::steady_clock::now()-start).count();
+    return seconds > 0.0 ? static_cast<float>(8.0/seconds) : 0.0f;
 }
 
-void LLMManager::setTemperature(float temperature) {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    m_defaultTemperature = temperature;
-    for (auto& pair : m_modelStates) {
-        pair.second.temperature = temperature;
-    }
-}
-
-float LLMManager::getTemperature() const {
-    return m_defaultTemperature;
-}
-
-void LLMManager::setTopP(float topP) {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    m_defaultTopP = topP;
-    for (auto& pair : m_modelStates) {
-        pair.second.topP = topP;
-    }
-}
-
-float LLMManager::getTopP() const {
-    return m_defaultTopP;
-}
-
-void LLMManager::setMaxTokens(int maxTokens) {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    m_defaultMaxTokens = maxTokens;
-    for (auto& pair : m_modelStates) {
-        pair.second.maxTokens = maxTokens;
-    }
-}
-
-int LLMManager::getMaxTokens() const {
-    return m_defaultMaxTokens;
-}
+void LLMManager::setTemperature(float temperature) { std::lock_guard<std::mutex> lock(m_mutex); m_defaultTemperature=std::clamp(temperature,0.0f,2.0f); for(auto& p:m_modelStates)p.second.temperature=m_defaultTemperature; }
+float LLMManager::getTemperature() const { std::lock_guard<std::mutex> lock(m_mutex); return m_defaultTemperature; }
+void LLMManager::setTopP(float topP) { std::lock_guard<std::mutex> lock(m_mutex); m_defaultTopP=std::clamp(topP,0.0f,1.0f); for(auto& p:m_modelStates)p.second.topP=m_defaultTopP; }
+float LLMManager::getTopP() const { std::lock_guard<std::mutex> lock(m_mutex); return m_defaultTopP; }
+void LLMManager::setMaxTokens(int maxTokens) { std::lock_guard<std::mutex> lock(m_mutex); m_defaultMaxTokens=std::clamp(maxTokens,1,4096); for(auto& p:m_modelStates)p.second.maxTokens=m_defaultMaxTokens; }
+int LLMManager::getMaxTokens() const { std::lock_guard<std::mutex> lock(m_mutex); return m_defaultMaxTokens; }
 
 bool LLMManager::loadModelFromFile(const std::string& modelName) {
-    // In a real implementation, this would load the model file
-    // and initialize the model context
-    // For now, just return true to simulate success
+    std::string path=modelName;
+    std::ifstream file(path, std::ios::binary | std::ios::ate);
+    if (!file.good() || file.tellg() <= 0) return false;
+    auto backend=createLlamaCppBackend();
+    if (!backend || !backend->load(path)) return false;
+    ModelState state; state.loaded=true; state.temperature=m_defaultTemperature; state.topP=m_defaultTopP; state.maxTokens=m_defaultMaxTokens; state.backend=std::move(backend);
+    m_modelStates[modelName]=std::move(state);
     return true;
 }
-
-void LLMManager::unloadModelInternal(const std::string& modelName) {
-    // In a real implementation, this would clean up the model context
-    auto it = m_modelStates.find(modelName);
-    if (it != m_modelStates.end()) {
-        // Clean up the model context
-        it->second.context = nullptr;
-    }
-}
+void LLMManager::unloadModelInternal(const std::string& modelName) { auto it=m_modelStates.find(modelName); if(it!=m_modelStates.end() && it->second.backend) it->second.backend->unload(); }
 
 void LLMManager::initializeAvailableModels() {
-    // Initialize with some default models
-    m_availableModels = {
-        {
-            "qwen3-0.6b-q4",
-            "1.0",
-            400000000, // ~400MB
-            "GGUF",
-            "Q4",
-            1000000000, // ~1GB RAM requirement
-            {"en", "ur", "hi", "ar"},
-            false,
-            false,
-            "Apache 2.0",
-            "Qwen",
-            "abc123",
-            false
-        },
-        {
-            "qwen3-1.7b-q4",
-            "1.0",
-            1000000000, // ~1GB
-            "GGUF",
-            "Q4",
-            2000000000, // ~2GB RAM requirement
-            {"en", "ur", "hi", "ar"},
-            false,
-            false,
-            "Apache 2.0",
-            "Qwen",
-            "def456",
-            false
-        },
-        {
-            "qwen3-4b-q4",
-            "1.0",
-            2000000000, // ~2GB
-            "GGUF",
-            "Q4",
-            4000000000, // ~4GB RAM requirement
-            {"en", "ur", "hi", "ar"},
-            false,
-            false,
-            "Apache 2.0",
-            "Qwen",
-            "ghi789",
-            false
-        }
+    std::lock_guard<std::mutex> lock(m_mutex);
+    m_availableModels={
+        {"qwen3-0.6b-q4","","","GGUF","Q4",0,{"en","ur","hi","ar"},false,false,"","Qwen","",false},
+        {"qwen3-1.7b-q4","","","GGUF","Q4",0,{"en","ur","hi","ar"},false,false,"","Qwen","",false},
+        {"qwen3-4b-q4","","","GGUF","Q4",0,{"en","ur","hi","ar"},false,false,"","Qwen","",false}
     };
 }
