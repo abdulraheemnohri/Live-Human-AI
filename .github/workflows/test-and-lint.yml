@@ -26,6 +26,9 @@ jobs:
           #include "JalebiWorldState.h"
           #include "JalebiModelEscalator.h"
           #include "JalebiMemoryPolicy.h"
+          #include "JalebiConfidencePolicy.h"
+          #include "JalebiRetryPolicy.h"
+          #include "JalebiResourcePolicy.h"
           using namespace LiveHumanAI;
           int main() {
               JalebiWorldStateTracker tracker;
@@ -45,6 +48,14 @@ jobs:
               assert(JalebiMemoryPolicy::shouldStore(candidate));
               candidate.sensitive = true;
               assert(!JalebiMemoryPolicy::shouldStore(candidate));
+              assert(JalebiConfidencePolicy::decide(0.95f, true, false, false) == JalebiConfidencePolicy::Decision::ACCEPT);
+              assert(JalebiConfidencePolicy::decide(0.50f, true, false, false) == JalebiConfidencePolicy::Decision::RECHECK);
+              assert(JalebiConfidencePolicy::decide(0.80f, true, false, false) == JalebiConfidencePolicy::Decision::ESCALATE);
+              assert(JalebiConfidencePolicy::decide(0.95f, true, true, false) == JalebiConfidencePolicy::Decision::ASK_USER);
+              assert(JalebiRetryPolicy::mayRetry(0, true, true));
+              assert(!JalebiRetryPolicy::mayRetry(3, true, true));
+              assert(JalebiResourcePolicy::evaluate({95, 20, 30, 80}) == JalebiResourcePolicy::Decision::PAUSE);
+              assert(JalebiResourcePolicy::evaluate({85, 20, 41, 80}) == JalebiResourcePolicy::Decision::REDUCE_WORKLOAD);
               return 0;
           }
           EOF
