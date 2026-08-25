@@ -8,6 +8,8 @@
 #include <memory>
 #include <mutex>
 
+// VisionManager only passes frames through to the backend. Keep OpenCV optional
+// so the native core can build when no OpenCV SDK is bundled.
 namespace cv { class Mat; }
 
 class VisionManager {
@@ -43,11 +45,16 @@ public:
     float benchmarkModel(const std::string& name);
 
 private:
-    struct ModelState { bool loaded = false; std::unique_ptr<VisionBackend> backend; };
+    struct ModelState {
+        bool loaded = false;
+        std::unique_ptr<VisionBackend> backend;
+    };
+
     mutable std::mutex m_mutex;
     std::vector<std::string> m_loadedModels;
     std::map<std::string, ModelState> m_modelStates;
     std::vector<ModelInfo> m_availableModels;
+
     bool loadModelFromFile(const std::string& name);
     void unloadModelInternal(const std::string& name);
     void initializeAvailableModels();

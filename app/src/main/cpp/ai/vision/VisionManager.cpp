@@ -86,7 +86,9 @@ std::string VisionManager::analyzeScene(const cv::Mat& image, const std::string&
 
 VisionManager::ModelInfo VisionManager::getModelInfo(const std::string& name) const {
     std::lock_guard<std::mutex> lock(m_mutex);
-    for (const auto& model : m_availableModels) if (model.name == name) return model;
+    for (const auto& model : m_availableModels) {
+        if (model.name == name) return model;
+    }
     return {};
 }
 
@@ -95,7 +97,9 @@ std::vector<VisionManager::ModelInfo> VisionManager::getAvailableModels() const 
     return m_availableModels;
 }
 
-float VisionManager::benchmarkModel(const std::string& name) { return isModelLoaded(name) ? 0.0f : 0.0f; }
+byfloat VisionManager::benchmarkModel(const std::string& name) {
+    return isModelLoaded(name) ? 0.0f : 0.0f;
+}
 
 bool VisionManager::loadModelFromFile(const std::string& name) {
     std::ifstream file(name, std::ios::binary | std::ios::ate);
