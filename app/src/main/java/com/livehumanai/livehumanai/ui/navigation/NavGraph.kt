@@ -7,6 +7,7 @@ import androidx.navigation.compose.rememberNavController
 import com.livehumanai.livehumanai.ui.HomeScreen
 import com.livehumanai.livehumanai.ui.chat.ChatScreen
 import com.livehumanai.livehumanai.ui.diagnostics.DiagnosticsScreen
+import com.livehumanai.livehumanai.ui.jalebi.JalebiDeveloperScreen
 import com.livehumanai.livehumanai.ui.memory.MemoryScreen
 import com.livehumanai.livehumanai.ui.models.ModelManagerScreen
 import com.livehumanai.livehumanai.ui.performance.PerformanceScreen
@@ -14,18 +15,10 @@ import com.livehumanai.livehumanai.ui.privacy.PrivacyScreen
 import com.livehumanai.livehumanai.ui.settings.SettingsScreen
 import com.livehumanai.livehumanai.ui.vision.VisionScreen
 
-/**
- * NavGraph defines the navigation structure for the Live Human AI app.
- */
 @Composable
 fun NavGraph() {
     val navController = rememberNavController()
-
-    NavHost(
-        navController = navController,
-        startDestination = Screen.Home.route
-    ) {
-        // Main screens
+    NavHost(navController = navController, startDestination = Screen.Home.route) {
         composable(Screen.Home.route) {
             HomeScreen(
                 onNavigateToChat = { navController.navigate(Screen.Chat.route) },
@@ -33,47 +26,18 @@ fun NavGraph() {
                 onNavigateToSettings = { navController.navigate(Screen.Settings.route) }
             )
         }
-
-        composable(Screen.Chat.route) {
-            ChatScreen()
-        }
-
-        composable(Screen.Vision.route) {
-            VisionScreen()
-        }
-
-        composable(Screen.Models.route) {
-            ModelManagerScreen()
-        }
-
-        // Settings screens
-        composable(Screen.Settings.route) {
-            SettingsScreen(
-                onBack = { navController.popBackStack() }
-            )
-        }
-
-        composable(Screen.Performance.route) {
-            PerformanceScreen()
-        }
-
-        composable(Screen.Memory.route) {
-            MemoryScreen()
-        }
-
-        composable(Screen.Diagnostics.route) {
-            DiagnosticsScreen()
-        }
-
-        composable(Screen.Privacy.route) {
-            PrivacyScreen()
-        }
+        composable(Screen.Chat.route) { ChatScreen() }
+        composable(Screen.Vision.route) { VisionScreen() }
+        composable(Screen.Models.route) { ModelManagerScreen() }
+        composable(Screen.Settings.route) { SettingsScreen(onBack = { navController.popBackStack() }) }
+        composable(Screen.Performance.route) { PerformanceScreen() }
+        composable(Screen.Memory.route) { MemoryScreen() }
+        composable(Screen.Diagnostics.route) { DiagnosticsScreen() }
+        composable(Screen.Privacy.route) { PrivacyScreen() }
+        composable(Screen.Jalebi.route) { JalebiDeveloperScreen() }
     }
 }
 
-/**
- * Screen defines the destinations for navigation.
- */
 sealed class Screen(val route: String) {
     object Home : Screen("home")
     object Chat : Screen("chat")
@@ -84,4 +48,5 @@ sealed class Screen(val route: String) {
     object Memory : Screen("memory")
     object Diagnostics : Screen("diagnostics")
     object Privacy : Screen("privacy")
+    object Jalebi : Screen("jalebi-developer")
 }
