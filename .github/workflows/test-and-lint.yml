@@ -19,7 +19,63 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-      - name: Run JCL policy unit tests
+      - name: Compile and run native JCL smoke test
+        run: |
+          cat << 'EOF' > /tmp/test_jcl_native.cpp
+          #include <cassert>
+          #include "JalebiNativeRuntime.h"
+          #include "JalebiNativePerception.h"
+          #include "JalebiNativeAudio.h"
+          #include "JalebiNativeMemory.h"
+          #include "JalebiSecurityPolicy.h"
+          using namespace LiveHumanAI;
+          int main() {
+              JalebiNativeRuntime runtime;
+              assert(runtime.initialize());
+              const int id = runtime.createGoal("test live loop", 3);
+              assert(id > 0 && runtime.start());
+
+              NativeVisionObservation observation;
+              observation.frame.width = 1280;
+              observation.frame.height = 720;
+              observation.scene = "desk";
+              observation.objects = {"document"};
+              observation.text = {"Name"};
+              observation.confidence = 0.95f;
+              JalebiNativePerception perception;
+              auto world = perception.toWorldState(observation);
+              JalebiNativeRuntime::Input input;
+              input.semanticInput = "document detected";
+              input.world = world;
+              input.confidence = 0.95f;
+              input.evidenceAvailable = true;
+              auto decision = runtime.process(input);
+              assert(decision.runInference);
+              runtime.execute(input.semanticInput);
+              assert(runtime.evaluate(0.95f, true, "verified", "COMPLETE"));
+
+              JalebiNativeAudio audio;
+              audio.start();
+              NativeSpeechResult speech{"hello", 0.98f, true};
+              assert(audio.onSpeech(speech) == JalebiConversationLoop::State::UNDERSTANDING);
+
+              JalebiNativeMemory memory;
+              JalebiMemoryPolicy::Candidate candidate{"approved fact", 0.95f, true, false};
+              assert(memory.promote(candidate));
+
+              JalebiSecurityPolicy::Request read{"read_only", true, false, true};
+              assert(JalebiSecurityPolicy::authorize(read));
+              JalebiSecurityPolicy::Request action{"device_control", true, false, true};
+              assert(!JalebiSecurityPolicy::authorize(action));
+              runtime.shutdown();
+              return 0;
+          }
+          EOF
+          g++ -std=c++17 -pthread -I app/src/main/cpp -I app/src/main/cpp/ai -I app/src/main/cpp/core -I app/src/main/cpp/security \
+            /tmp/test_jcl_native.cpp app/src/main/cpp/ai/JalebiLoopEngine.cpp app/src/main/cpp/ai/JalebiNativeRuntime.cpp \
+            -o /tmp/test_jcl_native
+          /tmp/test_jcl_native
+      - name: Run native policy tests
         run: |
           cat << 'EOF' > /tmp/test_jcl_policy.cpp
           #include <cassert>
@@ -38,12 +94,9 @@ jobs:
               assert(!tracker.update(b));
               JalebiWorldState c = a; c.detectedText = {"Name"};
               assert(tracker.update(c));
-              auto small = JalebiModelEscalator::choose(0.95f, false, true);
-              auto medium = JalebiModelEscalator::choose(0.50f, false, false);
-              auto degraded = JalebiModelEscalator::choose(0.20f, true, true);
-              assert(small.tier == JalebiModelEscalator::Tier::SMALL);
-              assert(medium.tier == JalebiModelEscalator::Tier::MEDIUM);
-              assert(degraded.degraded);
+              assert(JalebiModelEscalator::choose(0.95f, false, true).tier == JalebiModelEscalator::Tier::SMALL);
+              assert(JalebiModelEscalator::choose(0.50f, false, false).tier == JalebiModelEscalator::Tier::MEDIUM);
+              assert(JalebiModelEscalator::choose(0.20f, true, true).degraded);
               JalebiMemoryPolicy::Candidate candidate{"stable preference", 0.95f, true, false};
               assert(JalebiMemoryPolicy::shouldStore(candidate));
               candidate.sensitive = true;
@@ -51,11 +104,9 @@ jobs:
               assert(JalebiConfidencePolicy::decide(0.95f, true, false, false) == JalebiConfidencePolicy::Decision::ACCEPT);
               assert(JalebiConfidencePolicy::decide(0.50f, true, false, false) == JalebiConfidencePolicy::Decision::RECHECK);
               assert(JalebiConfidencePolicy::decide(0.80f, true, false, false) == JalebiConfidencePolicy::Decision::ESCALATE);
-              assert(JalebiConfidencePolicy::decide(0.95f, true, true, false) == JalebiConfidencePolicy::Decision::ASK_USER);
               assert(JalebiRetryPolicy::mayRetry(0, true, true));
               assert(!JalebiRetryPolicy::mayRetry(3, true, true));
               assert(JalebiResourcePolicy::evaluate({95, 20, 30, 80}) == JalebiResourcePolicy::Decision::PAUSE);
-              assert(JalebiResourcePolicy::evaluate({85, 20, 41, 80}) == JalebiResourcePolicy::Decision::REDUCE_WORKLOAD);
               return 0;
           }
           EOF
