@@ -38,11 +38,3 @@ class CameraJalebiCoordinator(
         }
     }
 }
-
-data class JalebiVisionResult(
-    val sceneId: String,
-    val objects: List<String>,
-    val text: List<String>,
-    val confidence: Float,
-    val timestampMs: Long = System.currentTimeMillis()
-)
