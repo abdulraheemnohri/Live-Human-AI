@@ -65,27 +65,26 @@ class AIViewModel @Inject constructor(
 
     fun stopGeneration() { aiRepository.stopGeneration(); _aiState.value = AIState.Idle }
 
-    fun startJalebiLoop(goal: String, maxIterations: Int = 8) {
-        viewModelScope.launch {
-            if (jalebiLiveController.start(goal, maxIterations)) {
-                _jclLoopId.value = aiRepository.createJalebiLoop(goal, maxIterations).takeIf { it > 0 }
-                _jclLoopId.value?.let { refreshJalebiLoop(it) }
-            } else _jclState.value = "FAILED"
+    /** Starts exactly one native JCL loop; the controller owns its id. */
+    fun startJalebiLoop(goal: String, maxIterations: Int = 8): Boolean {
+        val id = jalebiLiveController.start(goal, maxIterations) ?: run {
+            _jclState.value = "FAILED"
+            return false
         }
+        _jclLoopId.value = id
+        refreshJalebiLoop(id)
+        return true
     }
 
-    fun startLiveJalebi(goal: String = "Continuously understand the current user context", maxIterations: Int = 8): Boolean {
-        val started = jalebiLiveController.start(goal, maxIterations)
-        if (started) viewModelScope.launch { delay(10); refreshJalebiLoop(_jclLoopId.value) }
-        return started
-    }
+    fun startLiveJalebi(goal: String = "Continuously understand the current user context", maxIterations: Int = 8): Boolean =
+        startJalebiLoop(goal, maxIterations)
 
     fun submitLivePerception(input: String, evaluation: suspend (String) -> JalebiLiveController.Evaluation) {
         jalebiLiveController.submitPerception(input, evaluation)
-        viewModelScope.launch { delay(25); refreshJalebiLoop(_jclLoopId.value) }
+        viewModelScope.launch { delay(25); refreshJalebiLoop(jalebiLiveController.currentLoopId()) }
     }
 
-    fun stopLiveJalebi() { jalebiLiveController.stop(); _jclState.value = "CANCELLED" }
+    fun stopLiveJalebi() { jalebiLiveController.stop(); _jclLoopId.value = null; _jclState.value = "CANCELLED" }
     fun pauseJalebiLoop() { jalebiLiveController.pause(); refreshJalebiLoop() }
     fun resumeJalebiLoop() { jalebiLiveController.resume(); refreshJalebiLoop() }
 
@@ -93,7 +92,15 @@ class AIViewModel @Inject constructor(
     fun evaluateJalebiLoop(confidence: Float, goalCompleted: Boolean, evaluation: String, nextAction: String, memoryUpdates: String = "") {
         _jclLoopId.value?.let { id -> aiRepository.evaluateJalebiLoop(id, confidence, goalCompleted, evaluation, nextAction, memoryUpdates); refreshJalebiLoop(id) }
     }
-    fun refreshJalebiLoop(loopId: Int? = _jclLoopId.value) { loopId?.let { _jclLoopId.value = it; _jclState.value = aiRepository.getJalebiLoopState(it); _jclIteration.value = aiRepository.getJalebiIteration(it); _jclConfidence.value = aiRepository.getJalebiConfidence(it); _jclHistoryJson.value = aiRepository.getJalebiHistory(it) } }
+    fun refreshJalebiLoop(loopId: Int? = _jclLoopId.value) {
+        loopId?.let {
+            _jclLoopId.value = it
+            _jclState.value = aiRepository.getJalebiLoopState(it)
+            _jclIteration.value = aiRepository.getJalebiIteration(it)
+            _jclConfidence.value = aiRepository.getJalebiConfidence(it)
+            _jclHistoryJson.value = aiRepository.getJalebiHistory(it)
+        }
+    }
 
     suspend fun createNewConversation(title: String = "New Conversation"): Long = conversationRepository.createConversation(title).also { _currentConversationId.value = it }
     suspend fun getConversation(conversationId: Long) { _currentConversationId.value = conversationRepository.getConversationById(conversationId).first?.id }
@@ -103,10 +110,13 @@ class AIViewModel @Inject constructor(
     suspend fun remember(content: String, title: String? = null) { memoryRepository.createMemory(content = content, title = title, isImportant = true) }
     suspend fun searchMemories(query: String): List<String> = memoryRepository.searchMemories(query).map { it.content }
     suspend fun getPerformanceMode(): String = settingsRepository.getPerformanceMode()
-    suspend fun setPerformanceMode(mode: String) { settingsRepository.setPerformanceMode(mode); aiRepository.setPerformanceMode(com.livehumanai.livehumanai.nativebridge.NativeBridge.PerformanceMode.values().getOrElse(if (mode == "Maximum") 3 else if (mode == "Performance") 2 else if (mode == "Battery Saver") 0 else 1) { com.livehumanai.livehumanai.nativebridge.NativeBridge.PerformanceMode.BALANCED }) }
+    suspend fun setPerformanceMode(mode: String) { settingsRepository.setPerformanceMode(mode) }
 
     private fun startPerformanceMonitoring() = viewModelScope.launch {
-        while (true) { _performanceMetrics.value = PerformanceMetrics(aiRepository.getCPUUsage(), aiRepository.getRAMUsagePercentage(), aiRepository.getTemperature(), aiRepository.getBatteryLevel(), aiRepository.getTotalRAM(), aiRepository.getAvailableRAM()); delay(1000) }
+        while (true) {
+            _performanceMetrics.value = PerformanceMetrics(aiRepository.getCPUUsage(), aiRepository.getRAMUsagePercentage(), aiRepository.getTemperature(), aiRepository.getBatteryLevel(), aiRepository.getTotalRAM(), aiRepository.getAvailableRAM())
+            delay(1000)
+        }
     }
 
     sealed class AIState { data object Idle : AIState(); data object Thinking : AIState(); data class Response(val text: String) : AIState(); data class Error(val message: String) : AIState() }
