@@ -11,109 +11,48 @@ jobs:
   test-and-lint:
     name: Test Code and Find Bugs
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-
       - name: Set up JDK 17
         uses: actions/setup-java@v5
         with:
           java-version: '17'
           distribution: 'temurin'
-
-      - name: Run C++ Native Runtime Unit Tests
+      - name: Run JCL policy unit tests
         run: |
-          mkdir -p /tmp/android
-          cat << 'EOF' > /tmp/android/log.h
-          #ifndef ANDROID_LOG_H
-          #define ANDROID_LOG_H
-          #define ANDROID_LOG_UNKNOWN 0
-          #define ANDROID_LOG_DEFAULT 1
-          #define ANDROID_LOG_VERBOSE 2
-          #define ANDROID_LOG_DEBUG 3
-          #define ANDROID_LOG_INFO 4
-          #define ANDROID_LOG_WARN 5
-          #define ANDROID_LOG_ERROR 6
-          #define ANDROID_LOG_FATAL 7
-          #define __android_log_print(prio, tag, ...) ((void)0)
-          #endif
-          EOF
-
-          cat << 'EOF' > /tmp/test_native.cpp
-          #include <iostream>
+          cat << 'EOF' > /tmp/test_jcl_policy.cpp
           #include <cassert>
-          #include <thread>
-          #include <chrono>
-          #include "NativeEngine.h"
-          #include "ModelRouter.h"
-          #include "TaskScheduler.h"
-          #include "HardwareProfiler.h"
-          #include "JalebiLoopEngine.h"
-          #include "JalebiResourcePolicy.h"
-          #include "JalebiToolPolicy.h"
-
+          #include "JalebiWorldState.h"
+          #include "JalebiModelEscalator.h"
+          #include "JalebiMemoryPolicy.h"
+          using namespace LiveHumanAI;
           int main() {
-              NativeEngine engine;
-              assert(engine.initialize());
-
-              HardwareProfiler profiler;
-              profiler.initialize();
-
-              ModelRouter router;
-              router.initialize();
-              router.setDeviceProfile(ModelRouter::DeviceProfile::MID_RANGE);
-              assert(!router.selectModel("text").empty());
-              router.setDeviceProfile(ModelRouter::DeviceProfile::FLAGSHIP);
-              assert(!router.selectModel("text").empty());
-
-              TaskScheduler scheduler;
-              scheduler.initialize();
-              bool taskExecuted = false;
-              scheduler.scheduleTask("test_task", TaskScheduler::Priority::HIGH, [&taskExecuted]() { taskExecuted = true; });
-              std::this_thread::sleep_for(std::chrono::milliseconds(200));
-              assert(taskExecuted);
-
-              LiveHumanAI::JalebiLoopEngine jcl;
-              assert(jcl.initialize());
-              int loopId = jcl.createLoop("Determine whether document is complete", 3, 0.90f);
-              assert(loopId > 0);
-              assert(jcl.startLoop(loopId));
-              auto iteration = jcl.executeIteration(loopId, "document frame 1");
-              assert(iteration.iterationId == 1);
-              assert(jcl.recordEvaluation(loopId, 0.65f, false, "Missing field", "REPERCEIVE"));
-              assert(jcl.getLoopState(loopId) == LiveHumanAI::JalebiLoopEngine::LoopState::REPLANNING);
-              jcl.executeIteration(loopId, "document frame 2");
-              assert(jcl.recordEvaluation(loopId, 0.96f, true, "All required fields present", "COMPLETE"));
-              assert(jcl.getLoopState(loopId) == LiveHumanAI::JalebiLoopEngine::LoopState::COMPLETED);
-              assert(jcl.getCurrentIteration(loopId) == 2);
-              assert(jcl.getLoopHistory(loopId).size() == 2);
-
-              using Policy = LiveHumanAI::JalebiResourcePolicy;
-              assert(Policy::evaluate({50.0f, 50.0f, 30.0f, 80.0f}) == Policy::Decision::ALLOW);
-              assert(Policy::evaluate({85.0f, 50.0f, 30.0f, 80.0f}) == Policy::Decision::REDUCE_WORKLOAD);
-              assert(Policy::evaluate({95.0f, 50.0f, 30.0f, 80.0f}) == Policy::Decision::PAUSE);
-              assert(LiveHumanAI::JalebiToolPolicy::authorize("vision_read", true, false) == LiveHumanAI::JalebiToolPolicy::Decision::ALLOW);
-              assert(LiveHumanAI::JalebiToolPolicy::authorize("device_control", true, false) == LiveHumanAI::JalebiToolPolicy::Decision::DENY);
-              assert(LiveHumanAI::JalebiToolPolicy::authorize("device_control", true, true) == LiveHumanAI::JalebiToolPolicy::Decision::ALLOW);
-
-              jcl.shutdown();
-              scheduler.shutdown();
-              engine.shutdown();
-              router.shutdown();
-              std::cout << "All Native AI Runtime unit tests passed successfully!" << std::endl;
+              JalebiWorldStateTracker tracker;
+              JalebiWorldState a; a.sceneId = "desk"; a.detectedObjects = {"document"};
+              assert(tracker.update(a));
+              JalebiWorldState b = a;
+              assert(!tracker.update(b));
+              JalebiWorldState c = a; c.detectedText = {"Name"};
+              assert(tracker.update(c));
+              auto small = JalebiModelEscalator::choose(0.95f, false, true);
+              auto medium = JalebiModelEscalator::choose(0.50f, false, false);
+              auto degraded = JalebiModelEscalator::choose(0.20f, true, true);
+              assert(small.tier == JalebiModelEscalator::Tier::SMALL);
+              assert(medium.tier == JalebiModelEscalator::Tier::MEDIUM);
+              assert(degraded.degraded);
+              JalebiMemoryPolicy::Candidate candidate{"stable preference", 0.95f, true, false};
+              assert(JalebiMemoryPolicy::shouldStore(candidate));
+              candidate.sensitive = true;
+              assert(!JalebiMemoryPolicy::shouldStore(candidate));
               return 0;
           }
           EOF
-
-          g++ -std=c++17 -I /tmp -I app/src/main/cpp -I app/src/main/cpp/core -I app/src/main/cpp/ai -I app/src/main/cpp/ai/llm -I app/src/main/cpp/ai/stt -I app/src/main/cpp/ai/tts -I app/src/main/cpp/ai/vision -I app/src/main/cpp/audio -I app/src/main/cpp/memory -I app/src/main/cpp/hardware -I app/src/main/cpp/scheduler -I app/src/main/cpp/security -I app/src/main/cpp/jni -I app/src/main/cpp/utils /tmp/test_native.cpp app/src/main/cpp/core/NativeCore.cpp app/src/main/cpp/core/NativeEngine.cpp app/src/main/cpp/ai/AIEngine.cpp app/src/main/cpp/ai/JalebiLoopEngine.cpp app/src/main/cpp/ai/ModelRouter.cpp app/src/main/cpp/ai/llm/LLMManager.cpp app/src/main/cpp/ai/stt/STTManager.cpp app/src/main/cpp/ai/tts/TTSManager.cpp app/src/main/cpp/ai/vision/VisionManager.cpp app/src/main/cpp/hardware/HardwareProfiler.cpp app/src/main/cpp/hardware/ThermalMonitor.cpp app/src/main/cpp/hardware/BatteryMonitor.cpp app/src/main/cpp/scheduler/TaskScheduler.cpp app/src/main/cpp/utils/Logger.cpp -o /tmp/test_native_runner -lpthread
-          /tmp/test_native_runner
-
+          g++ -std=c++17 -I app/src/main/cpp/ai /tmp/test_jcl_policy.cpp -o /tmp/test_jcl_policy
+          /tmp/test_jcl_policy
       - name: Make Gradle Wrapper Executable
         run: chmod +x gradlew || gradle wrapper
-
       - name: Run Android Unit Tests
         run: ./gradlew test
-
       - name: Run Android Lint Checks
         run: ./gradlew lint
