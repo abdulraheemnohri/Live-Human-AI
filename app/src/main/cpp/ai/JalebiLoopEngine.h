@@ -24,6 +24,7 @@ public:
         long long deadlineMs = 0;
         float successConfidence = 0.90f;
         int maxIterations = 8;
+        long long maxDurationMs = 60000;
     };
 
     struct Iteration {
@@ -68,11 +69,8 @@ public:
     bool completeLoop(int loopId);
     bool failLoop(int loopId, const std::string& reason);
 
-    // Records one bounded cognitive iteration. External AI/tool components own
-    // actual perception, reasoning and actions; this engine owns lifecycle.
     Iteration executeIteration(int loopId, const std::string& currentInput);
 
-    // Records external evaluation evidence and decides the next loop state.
     bool recordEvaluation(
         int loopId,
         float confidence,
