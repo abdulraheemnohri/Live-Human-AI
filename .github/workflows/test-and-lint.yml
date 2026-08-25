@@ -54,6 +54,13 @@ jobs:
               runtime.execute(input.semanticInput);
               assert(runtime.evaluate(0.95f, true, "verified", "COMPLETE"));
 
+              const auto visionDecision = runtime.submitVision("desk", "document", "Name", 0.95f, {}, false);
+              assert(visionDecision.find("runInference") != std::string::npos);
+              const auto speechDecision = runtime.submitSpeech("hello", 0.98f, true, {}, false);
+              assert(speechDecision.find("runInference") != std::string::npos);
+              const auto partialDecision = runtime.submitSpeech("hel", 0.50f, false, {}, false);
+              assert(partialDecision.find("partial_or_empty") != std::string::npos);
+
               JalebiNativeAudio audio;
               audio.start();
               NativeSpeechResult speech{"hello", 0.98f, true};
