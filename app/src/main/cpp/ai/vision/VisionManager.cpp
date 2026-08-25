@@ -97,7 +97,7 @@ std::vector<VisionManager::ModelInfo> VisionManager::getAvailableModels() const 
     return m_availableModels;
 }
 
-byfloat VisionManager::benchmarkModel(const std::string& name) {
+float VisionManager::benchmarkModel(const std::string& name) {
     return isModelLoaded(name) ? 0.0f : 0.0f;
 }
 
