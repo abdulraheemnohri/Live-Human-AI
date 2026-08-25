@@ -4,39 +4,78 @@ import com.livehumanai.livehumanai.data.repository.AIRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** Bounded Android-side JCL scheduler. Hardware producers feed semantic input here. */
+/** Android-side owner of a single bounded JCL session. */
 @Singleton
 class JalebiLiveController @Inject constructor(
     private val aiRepository: AIRepository
 ) {
-    private val scope = CoroutineScope(Dispatchers.Default)
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val mutex = Mutex()
     private var job: Job? = null
     private var loopId: Int? = null
     private var running = false
 
-    fun start(goal: String, maxIterations: Int = 8): Int? {
-        stop()
-        val id = aiRepository.createJalebiLoop(goal, maxIterations)
-        if (id <= 0 || !aiRepository.startJalebiLoop(id)) return null
+    private val _state = MutableStateFlow(JalebiSessionState())
+    val state: StateFlow<JalebiSessionState> = _state.asStateFlow()
+
+    suspend fun startAsync(goal: String, maxIterations: Int = 8): Int? = mutex.withLock {
+        stopLocked()
+        if (goal.isBlank()) return@withLock null
+        val boundedIterations = maxIterations.coerceIn(1, 32)
+        val id = aiRepository.createJalebiLoop(goal.trim(), boundedIterations)
+        if (id <= 0 || !aiRepository.startJalebiLoop(id)) {
+            _state.value = JalebiSessionState(status = JalebiSessionStatus.FAILED, message = "Unable to start JCL")
+            return@withLock null
+        }
         loopId = id
         running = true
-        return id
+        _state.value = JalebiSessionState(id, JalebiSessionStatus.RUNNING, 0, goal.trim())
+        id
+    }
+
+    fun start(goal: String, maxIterations: Int = 8): Int? {
+        if (goal.isBlank()) return null
+        var result: Int? = null
+        kotlinx.coroutines.runBlocking { result = startAsync(goal, maxIterations) }
+        return result
     }
 
     fun stop() {
+        kotlinx.coroutines.runBlocking { mutex.withLock { stopLocked() } }
+    }
+
+    private fun stopLocked() {
         running = false
         job?.cancel()
         job = null
-        loopId?.let(aiRepository::cancelJalebiLoop)
+        loopId?.let { aiRepository.cancelJalebiLoop(it) }
         loopId = null
+        _state.value = _state.value.copy(status = JalebiSessionStatus.CANCELLED)
     }
 
-    fun pause() { loopId?.let(aiRepository::pauseJalebiLoop) }
-    fun resume() { loopId?.let(aiRepository::resumeJalebiLoop) }
+    fun pause() {
+        val id = loopId ?: return
+        if (aiRepository.pauseJalebiLoop(id)) _state.value = _state.value.copy(status = JalebiSessionStatus.PAUSED)
+    }
+
+    fun resume() {
+        val id = loopId ?: return
+        if (aiRepository.resumeJalebiLoop(id)) {
+            running = true
+            _state.value = _state.value.copy(status = JalebiSessionStatus.RUNNING)
+        }
+    }
+
     fun currentLoopId(): Int? = loopId
     fun isRunning(): Boolean = running
 
@@ -47,12 +86,22 @@ class JalebiLiveController @Inject constructor(
         job = scope.launch {
             if (aiRepository.shouldPauseJalebiForResources()) {
                 aiRepository.pauseJalebiLoop(id)
+                _state.value = _state.value.copy(status = JalebiSessionStatus.RESOURCE_LIMIT)
                 return@launch
             }
-            aiRepository.executeJalebiIteration(id, input)
+            _state.value = _state.value.copy(status = JalebiSessionStatus.PROCESSING)
+            val executed = aiRepository.executeJalebiIteration(id, input)
+            if (!executed) return@launch
             val result = evaluate(input)
-            aiRepository.evaluateJalebiLoop(id, result.confidence.coerceIn(0f, 1f), result.completed,
-                result.evidence, result.nextAction, result.memoryUpdates)
+            val confidence = result.confidence.coerceIn(0f, 1f)
+            aiRepository.evaluateJalebiLoop(id, confidence, result.completed, result.evidence,
+                result.nextAction, result.memoryUpdates)
+            _state.value = _state.value.copy(
+                status = if (result.completed) JalebiSessionStatus.COMPLETED else JalebiSessionStatus.RUNNING,
+                confidence = confidence,
+                nextAction = result.nextAction
+            )
+            if (result.completed) running = false
         }
     }
 
@@ -64,3 +113,14 @@ class JalebiLiveController @Inject constructor(
         val memoryUpdates: String = ""
     )
 }
+
+enum class JalebiSessionStatus { IDLE, RUNNING, PROCESSING, PAUSED, RESOURCE_LIMIT, COMPLETED, FAILED, CANCELLED }
+
+data class JalebiSessionState(
+    val loopId: Int? = null,
+    val status: JalebiSessionStatus = JalebiSessionStatus.IDLE,
+    val confidence: Float = 0f,
+    val goal: String = "",
+    val nextAction: String = "",
+    val message: String = ""
+)
