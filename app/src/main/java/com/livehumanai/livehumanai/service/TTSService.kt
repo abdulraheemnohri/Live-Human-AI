@@ -19,7 +19,7 @@ import java.util.UUID
 import java.util.concurrent.Executors
 import javax.inject.Inject
 
-/** Real Android TextToSpeech bridge with optional WAV synthesis callback. */
+/** Real Android TextToSpeech bridge. The app owns the shared native runtime lifecycle. */
 @AndroidEntryPoint
 class TTSService : Service(), TextToSpeech.OnInitListener {
     @Inject lateinit var aiRepository: AIRepository
@@ -28,7 +28,6 @@ class TTSService : Service(), TextToSpeech.OnInitListener {
     private val binder = TTSServiceBinder()
     private val executor = Executors.newSingleThreadExecutor()
     private var tts: TextToSpeech? = null
-    private var synthesisCallback: ((ByteArray) -> Unit)? = null
     private var pendingSynthesisFile: File? = null
     private var pendingSynthesisCallback: ((ByteArray) -> Unit)? = null
 
@@ -42,7 +41,6 @@ class TTSService : Service(), TextToSpeech.OnInitListener {
 
     override fun onCreate() {
         super.onCreate()
-        aiRepository.initialize()
         tts = TextToSpeech(applicationContext, this)
     }
 
@@ -58,12 +56,10 @@ class TTSService : Service(), TextToSpeech.OnInitListener {
                 pendingSynthesisFile = null
                 pendingSynthesisCallback = null
                 isSynthesizing = false
-                if (file != null && callback != null) {
-                    executor.execute {
-                        val bytes = runCatching { file.readBytes() }.getOrDefault(ByteArray(0))
-                        file.delete()
-                        callback(bytes)
-                    }
+                if (file != null && callback != null) executor.execute {
+                    val bytes = runCatching { file.readBytes() }.getOrDefault(ByteArray(0))
+                    file.delete()
+                    callback(bytes)
                 }
             }
             override fun onError(utteranceId: String) {
@@ -84,8 +80,8 @@ class TTSService : Service(), TextToSpeech.OnInitListener {
         pendingSynthesisFile = file
         pendingSynthesisCallback = callback
         isSynthesizing = true
-        val params = Bundle().apply { putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "jcl-${UUID.randomUUID()}") }
-        val result = engine.synthesizeToFile(text, params, file, params.getString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID))
+        val id = "jcl-${UUID.randomUUID()}"
+        val result = engine.synthesizeToFile(text, Bundle(), file, id)
         if (result != TextToSpeech.SUCCESS) {
             file.delete()
             pendingSynthesisFile = null
@@ -97,8 +93,7 @@ class TTSService : Service(), TextToSpeech.OnInitListener {
 
     fun speak(text: String): Boolean {
         if (text.isBlank() || !isReady) return false
-        val id = "live-${UUID.randomUUID()}"
-        return tts?.speak(text, TextToSpeech.QUEUE_FLUSH, Bundle(), id) == TextToSpeech.SUCCESS
+        return tts?.speak(text, TextToSpeech.QUEUE_FLUSH, Bundle(), "live-${UUID.randomUUID()}") == TextToSpeech.SUCCESS
     }
 
     fun stopSynthesis() {
@@ -115,7 +110,6 @@ class TTSService : Service(), TextToSpeech.OnInitListener {
         tts = null
         isReady = false
         executor.shutdownNow()
-        aiRepository.shutdown()
         super.onDestroy()
     }
 
