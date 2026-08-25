@@ -2,8 +2,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     package="com.livehumanai.livehumanai">
-
-    <!-- Application metadata -->
     <application
         android:name=".LiveHumanAIApp"
         android:allowBackup="false"
@@ -15,140 +13,40 @@
         android:theme="@style/Theme.LiveHumanAI"
         android:usesCleartextTraffic="false"
         tools:targetApi="31">
-
-        <!-- Main Activity -->
-        <activity
-            android:name=".ui.MainActivity"
-            android:exported="true"
-            android:label="@string/app_name"
-            android:theme="@style/Theme.LiveHumanAI"
-            android:windowSoftInputMode="adjustResize">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
+        <activity android:name=".ui.MainActivity" android:exported="true" android:label="@string/app_name" android:theme="@style/Theme.LiveHumanAI" android:windowSoftInputMode="adjustResize">
+            <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
         </activity>
-
-        <!-- Camera Activity -->
-        <activity
-            android:name=".ui.camera.CameraActivity"
-            android:exported="false"
-            android:theme="@style/Theme.LiveHumanAI" />
-
-        <!-- Chat Activity -->
-        <activity
-            android:name=".ui.chat.ChatActivity"
-            android:exported="false"
-            android:theme="@style/Theme.LiveHumanAI" />
-
-        <!-- Vision Activity -->
-        <activity
-            android:name=".ui.vision.VisionActivity"
-            android:exported="false"
-            android:theme="@style/Theme.LiveHumanAI" />
-
-        <!-- Model Manager Activity -->
-        <activity
-            android:name=".ui.models.ModelManagerActivity"
-            android:exported="false"
-            android:theme="@style/Theme.LiveHumanAI" />
-
-        <!-- Memory Activity -->
-        <activity
-            android:name=".ui.memory.MemoryActivity"
-            android:exported="false"
-            android:theme="@style/Theme.LiveHumanAI" />
-
-        <!-- Settings Activity -->
-        <activity
-            android:name=".ui.settings.SettingsActivity"
-            android:exported="false"
-            android:theme="@style/Theme.LiveHumanAI" />
-
-        <!-- Performance Monitor Activity -->
-        <activity
-            android:name=".ui.performance.PerformanceActivity"
-            android:exported="false"
-            android:theme="@style/Theme.LiveHumanAI" />
-
-        <!-- Privacy Center Activity -->
-        <activity
-            android:name=".ui.privacy.PrivacyActivity"
-            android:exported="false"
-            android:theme="@style/Theme.LiveHumanAI" />
-
-        <!-- Diagnostics Activity -->
-        <activity
-            android:name=".ui.diagnostics.DiagnosticsActivity"
-            android:exported="false"
-            android:theme="@style/Theme.LiveHumanAI" />
-
-        <!-- Foreground Service for AI Processing -->
-        <service
-            android:name=".service.AIProcessingService"
-            android:exported="false"
-            android:foregroundServiceType="dataSync|camera|microphone" />
-
-        <!-- Broadcast Receiver for Wake Word -->
-        <receiver
-            android:name=".receiver.WakeWordReceiver"
-            android:exported="false" />
-
-        <!-- Native Libraries -->
-        <uses-native-library
-            android:name="native-core"
-            android:required="false" />
-
-        <!-- Providers -->
-        <provider
-            android:name="androidx.core.content.FileProvider"
-            android:authorities="${applicationId}.fileprovider"
-            android:exported="false"
-            android:grantUriPermissions="true">
-            <meta-data
-                android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/file_paths" />
+        <activity android:name=".ui.camera.CameraActivity" android:exported="false" android:theme="@style/Theme.LiveHumanAI"/>
+        <activity android:name=".ui.chat.ChatActivity" android:exported="false" android:theme="@style/Theme.LiveHumanAI"/>
+        <activity android:name=".ui.vision.VisionActivity" android:exported="false" android:theme="@style/Theme.LiveHumanAI"/>
+        <activity android:name=".ui.models.ModelManagerActivity" android:exported="false" android:theme="@style/Theme.LiveHumanAI"/>
+        <activity android:name=".ui.memory.MemoryActivity" android:exported="false" android:theme="@style/Theme.LiveHumanAI"/>
+        <activity android:name=".ui.settings.SettingsActivity" android:exported="false" android:theme="@style/Theme.LiveHumanAI"/>
+        <activity android:name=".ui.performance.PerformanceActivity" android:exported="false" android:theme="@style/Theme.LiveHumanAI"/>
+        <activity android:name=".ui.privacy.PrivacyActivity" android:exported="false" android:theme="@style/Theme.LiveHumanAI"/>
+        <activity android:name=".ui.diagnostics.DiagnosticsActivity" android:exported="false" android:theme="@style/Theme.LiveHumanAI"/>
+        <service android:name=".service.AIProcessingService" android:exported="false" android:foregroundServiceType="dataSync|camera|microphone"/>
+        <service android:name=".service.TTSService" android:exported="false"/>
+        <receiver android:name=".receiver.WakeWordReceiver" android:exported="false"/>
+        <uses-native-library android:name="native-core" android:required="false"/>
+        <provider android:name="androidx.core.content.FileProvider" android:authorities="${applicationId}.fileprovider" android:exported="false" android:grantUriPermissions="true">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths"/>
         </provider>
-
     </application>
-
-    <!-- Required Permissions -->
-    <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.RECORD_AUDIO" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.WAKE_LOCK" />
-    <uses-permission android:name="android.permission.VIBRATE" />
-    <uses-permission android:name="android.permission.BLUETOOTH" />
-    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-
-    <!-- Optional Permissions (Requested at Runtime) -->
-    <uses-permission android:name="android.permission.READ_CONTACTS" />
-    <uses-permission android:name="android.permission.SEND_SMS" />
-    <uses-permission android:name="android.permission.READ_SMS" />
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-
-    <!-- Hardware Features -->
-    <uses-feature android:name="android.hardware.camera" />
-    <uses-feature android:name="android.hardware.camera.autofocus" />
-    <uses-feature android:name="android.hardware.microphone" />
-    <uses-feature android:name="android.hardware.bluetooth" />
-    <uses-feature android:name="android.hardware.location.gps" />
-    <uses-feature android:name="android.hardware.location.network" />
-
-    <!-- Screen Orientation -->
-    <uses-configuration android:reqFiveWayNav="true" />
-    <uses-configuration android:reqHardKeyboard="false" />
-    <uses-configuration android:reqKeyboardType="undefined" />
-    <uses-configuration android:reqNavigation="nonav" />
-    <uses-configuration android:reqTouchScreen="finger" />
-
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <uses-permission android:name="android.permission.VIBRATE"/>
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN"/>
+    <uses-feature android:name="android.hardware.camera" android:required="false"/>
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"/>
+    <uses-feature android:name="android.hardware.microphone" android:required="false"/>
 </manifest>
