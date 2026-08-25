@@ -1,130 +1,54 @@
-# Live Human AI - CMake Configuration
-# This file configures the NDK build for the native C++ components.
-
-cmake_minimum_required(VERSION 3.10.2)
-
-# Project name
+# Live Human AI - Native NDK configuration
+cmake_minimum_required(VERSION 3.22.1)
 project("LiveHumanAI_Native")
 
-# Enable C++17
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-# Set C++ compiler flags
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -O2")
-
-# Android NDK toolchain is automatically injected by AGP (-DCMAKE_TOOLCHAIN_FILE)
-
-# Android-specific settings
+set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
 
-# Include directories
-include_directories(
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/cpp/core
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/cpp/ai
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/cpp/audio
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/cpp/vision
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/cpp/memory
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/cpp/hardware
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/cpp/scheduler
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/cpp/security
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/cpp/jni
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/cpp/utils
+add_compile_options(-Wall -Wextra -Wpedantic -Wshadow -Wconversion)
+
+set(LH_CPP ${CMAKE_CURRENT_SOURCE_DIR}/src/main/cpp)
+
+file(GLOB_RECURSE LH_NATIVE_SOURCES CONFIGURE_DEPENDS
+    "${LH_CPP}/*.cpp"
 )
 
-# Link directories
-link_directories(
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/cpp
+find_library(log-lib log REQUIRED)
+
+add_library(native-core SHARED ${LH_NATIVE_SOURCES})
+
+target_include_directories(native-core PRIVATE
+    ${LH_CPP}
+    ${LH_CPP}/core
+    ${LH_CPP}/ai
+    ${LH_CPP}/audio
+    ${LH_CPP}/vision
+    ${LH_CPP}/memory
+    ${LH_CPP}/hardware
+    ${LH_CPP}/scheduler
+    ${LH_CPP}/security
+    ${LH_CPP}/jni
+    ${LH_CPP}/utils
 )
 
-# Android log library
-find_library(log-lib log)
-
-# OpenCV (Optional, uncomment if using OpenCV)
-# find_package(OpenCV REQUIRED)
-
-# Native libraries to build
-add_library(
-    native-core
-    SHARED
-    
-    # Core
-    src/main/cpp/core/NativeCore.cpp
-    src/main/cpp/core/NativeEngine.cpp
-    
-    # AI
-    src/main/cpp/ai/AIEngine.cpp
-    src/main/cpp/ai/JalebiLoopEngine.cpp
-    src/main/cpp/ai/ModelRouter.cpp
-    src/main/cpp/ai/llm/LLMManager.cpp
-    src/main/cpp/ai/stt/STTManager.cpp
-    src/main/cpp/ai/tts/TTSManager.cpp
-    src/main/cpp/ai/vision/VisionManager.cpp
-    
-    # Hardware
-    src/main/cpp/hardware/HardwareProfiler.cpp
-    src/main/cpp/hardware/ThermalMonitor.cpp
-    src/main/cpp/hardware/BatteryMonitor.cpp
-    
-    # Scheduler
-    src/main/cpp/scheduler/TaskScheduler.cpp
-    
-    # JNI
-    src/main/cpp/jni/JNIBridge.cpp
-    
-    # Utils
-    src/main/cpp/utils/Logger.cpp
+target_compile_definitions(native-core PRIVATE
+    LIVE_HUMAN_AI_NDK=1
+    JALEBI_COGNITIVE_LOOP=1
 )
 
-# Include all header files
-target_include_directories(
-    native-core
-    PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/cpp/core
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/cpp/ai
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/cpp/audio
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/cpp/vision
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/cpp/memory
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/cpp/hardware
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/cpp/scheduler
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/cpp/security
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/cpp/jni
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/cpp/utils
-)
+target_link_libraries(native-core PRIVATE ${log-lib} c++_shared)
 
-# Link libraries
-target_link_libraries(
-    native-core
-    
-    # Android log
-    ${log-lib}
-    
-    # C++ standard library
-    c++_shared
-    
-    # OpenCV (Optional)
-    # ${OpenCV_LIBS}
-    
-    # Threading is built into bionic libc on Android
-)
-
-# Platform-specific linker flags
 if(ANDROID)
-    target_link_options(
-        native-core
-        PRIVATE
+    target_compile_definitions(native-core PRIVATE __ANDROID__=1)
+    target_link_options(native-core PRIVATE
         -Wl,--build-id=sha1
         -Wl,--warn-shared-textrel
-        -Wl,--fatal-warnings
     )
 endif()
 
-# Install the library
-install(
-    TARGETS native-core
-    LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-    INCLUDES DESTINATION ${CMAKE_INSTALL_PREFIX}/include
+set_target_properties(native-core PROPERTIES
+    CXX_VISIBILITY_PRESET hidden
+    VISIBILITY_INLINES_HIDDEN YES
 )

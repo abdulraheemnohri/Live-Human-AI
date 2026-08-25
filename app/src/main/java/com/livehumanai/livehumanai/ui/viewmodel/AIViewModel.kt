@@ -7,90 +7,54 @@ import com.livehumanai.livehumanai.data.repository.ConversationRepository
 import com.livehumanai.livehumanai.data.repository.MemoryRepository
 import com.livehumanai.livehumanai.data.repository.ModelRepository
 import com.livehumanai.livehumanai.data.repository.SettingsRepository
+import com.livehumanai.livehumanai.jalebi.JalebiLiveController
+import com.livehumanai.livehumanai.jalebi.JalebiTelemetry
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/**
- * AIViewModel provides the business logic for AI operations.
- */
 @HiltViewModel
 class AIViewModel @Inject constructor(
     private val aiRepository: AIRepository,
     private val conversationRepository: ConversationRepository,
     private val memoryRepository: MemoryRepository,
     private val modelRepository: ModelRepository,
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val jalebiLiveController: JalebiLiveController
 ) : ViewModel() {
-
-    // State for AI operations
     private val _aiState = MutableStateFlow<AIState>(AIState.Idle)
     val aiState: StateFlow<AIState> = _aiState.asStateFlow()
-
-    // State for current conversation
     private val _currentConversationId = MutableStateFlow<Long?>(null)
     val currentConversationId: StateFlow<Long?> = _currentConversationId.asStateFlow()
-
-    // State for performance metrics
-    private val _performanceMetrics = MutableStateFlow<PerformanceMetrics>(PerformanceMetrics())
+    private val _performanceMetrics = MutableStateFlow(PerformanceMetrics())
     val performanceMetrics: StateFlow<PerformanceMetrics> = _performanceMetrics.asStateFlow()
-
-    // State for loaded models
     private val _loadedModels = MutableStateFlow<List<String>>(emptyList())
     val loadedModels: StateFlow<List<String>> = _loadedModels.asStateFlow()
-
-    // State for Jalebi Cognitive Loop (JCL)
-    private val _jclState = MutableStateFlow<String>("IDLE")
-    val jclState: StateFlow<String> = _jclState.asStateFlow()
+    private val _jclTelemetry = MutableStateFlow(JalebiTelemetry())
+    val jclTelemetry: StateFlow<JalebiTelemetry> = _jclTelemetry.asStateFlow()
 
     init {
-        // Initialize the native runtime
-        if (!aiRepository.initialize()) {
-            _aiState.value = AIState.Error("Failed to initialize AI runtime")
-        }
-
-        // Load default settings
-        viewModelScope.launch {
-            settingsRepository.initializeDefaultSettings()
-        }
-
-        // Start monitoring performance
+        if (!aiRepository.initialize()) _aiState.value = AIState.Error("Failed to initialize AI runtime")
+        viewModelScope.launch { settingsRepository.initializeDefaultSettings() }
         startPerformanceMonitoring()
     }
 
     override fun onCleared() {
-        super.onCleared()
+        jalebiLiveController.stop()
         aiRepository.shutdown()
+        super.onCleared()
     }
 
-    // AI operations
-
-    fun generateResponse(
-        prompt: String,
-        conversationId: Long? = null,
-        modelName: String = ""
-    ) {
+    fun generateResponse(prompt: String, conversationId: Long? = null, modelName: String = "") {
         viewModelScope.launch {
             try {
                 _aiState.value = AIState.Thinking
-
-                val temp = settingsRepository.getTemperature()
-                val tokens = settingsRepository.getMaxTokens()
-
-                val response = aiRepository.generate(prompt, modelName, temp, tokens)
-
-                // Save to conversation if provided
-                conversationId?.let { id ->
-                    conversationRepository.addMessageToConversation(
-                        conversationId = id,
-                        content = response,
-                        isUser = false
-                    )
-                }
-
+                val response = aiRepository.generate(prompt, modelName, settingsRepository.getTemperature(), settingsRepository.getMaxTokens())
+                conversationId?.let { conversationRepository.addMessageToConversation(it, response, false) }
                 _aiState.value = AIState.Response(response)
             } catch (e: Exception) {
                 _aiState.value = AIState.Error(e.message ?: "Unknown error")
@@ -98,141 +62,91 @@ class AIViewModel @Inject constructor(
         }
     }
 
-    fun stopGeneration() {
-        aiRepository.stopGeneration()
-        _aiState.value = AIState.Idle
+    fun stopGeneration() { aiRepository.stopGeneration(); _aiState.value = AIState.Idle }
+
+    fun startJalebiLoop(goal: String, maxIterations: Int = 8): Boolean {
+        val id = jalebiLiveController.start(goal, maxIterations) ?: run {
+            _jclTelemetry.value = _jclTelemetry.value.copy(state = "FAILED")
+            return false
+        }
+        refreshJalebiLoop(id, goal)
+        return true
     }
 
-    // Jalebi Cognitive Loop (JCL) operations
+    fun startLiveJalebi(goal: String = "Continuously understand the current user context", maxIterations: Int = 8): Boolean =
+        startJalebiLoop(goal, maxIterations)
 
-    fun startJalebiLoop(goal: String, maxIterations: Int = 8) {
+    fun submitLivePerception(input: String, evaluation: suspend (String) -> JalebiLiveController.Evaluation) {
+        jalebiLiveController.submitPerception(input, evaluation)
         viewModelScope.launch {
-            val bridge = com.livehumanai.livehumanai.nativebridge.NativeBridge.getInstance()
-            if (bridge.isInitialized) {
-                val loopId = bridge.createJalebiLoop(goal, maxIterations)
-                _jclState.value = bridge.getJalebiLoopState(loopId)
-            }
+            delay(25)
+            refreshJalebiLoop(jalebiLiveController.currentLoopId())
         }
     }
 
-    // Conversation operations
+    fun stopLiveJalebi() {
+        jalebiLiveController.stop()
+        _jclTelemetry.value = _jclTelemetry.value.copy(state = "CANCELLED", loopId = null)
+    }
 
-    suspend fun createNewConversation(title: String = "New Conversation"): Long {
-        return conversationRepository.createConversation(title).also { id ->
-            _currentConversationId.value = id
+    fun pauseJalebiLoop() { jalebiLiveController.pause(); refreshJalebiLoop() }
+    fun resumeJalebiLoop() { jalebiLiveController.resume(); refreshJalebiLoop() }
+
+    fun executeJalebiIteration(input: String) {
+        jalebiLiveController.currentLoopId()?.let { id ->
+            aiRepository.executeJalebiIteration(id, input)
+            refreshJalebiLoop(id)
         }
     }
 
-    suspend fun getConversation(conversationId: Long) {
-        viewModelScope.launch {
-            val (conversation, messages) = conversationRepository.getConversationById(conversationId)
-            _currentConversationId.value = conversation?.id
-            // TODO: Update conversation state
+    fun evaluateJalebiLoop(confidence: Float, goalCompleted: Boolean, evaluation: String, nextAction: String, memoryUpdates: String = "") {
+        jalebiLiveController.currentLoopId()?.let { id ->
+            aiRepository.evaluateJalebiLoop(id, confidence, goalCompleted, evaluation, nextAction, memoryUpdates)
+            refreshJalebiLoop(id)
         }
     }
 
-    suspend fun addMessageToConversation(content: String, isUser: Boolean) {
-        _currentConversationId.value?.let { conversationId ->
-            conversationRepository.addMessageToConversation(
-                conversationId = conversationId,
-                content = content,
-                isUser = isUser
-            )
-        }
-    }
-
-    // Model operations
-
-    fun loadModel(modelName: String) {
-        viewModelScope.launch {
-            if (aiRepository.loadModel(modelName)) {
-                _loadedModels.value = _loadedModels.value + modelName
-                // TODO: Update model state in database
-            }
-        }
-    }
-
-    fun unloadModel(modelName: String) {
-        viewModelScope.launch {
-            if (aiRepository.unloadModel(modelName)) {
-                _loadedModels.value = _loadedModels.value - modelName
-                // TODO: Update model state in database
-            }
-        }
-    }
-
-    // Memory operations
-
-    suspend fun remember(content: String, title: String? = null) {
-        memoryRepository.createMemory(
-            content = content,
-            title = title,
-            isImportant = true
+    fun refreshJalebiLoop(loopId: Int? = jalebiLiveController.currentLoopId(), goal: String = _jclTelemetry.value.goal) {
+        loopId ?: return
+        _jclTelemetry.value = _jclTelemetry.value.copy(
+            state = aiRepository.getJalebiLoopState(loopId),
+            iteration = aiRepository.getJalebiIteration(loopId),
+            confidence = aiRepository.getJalebiConfidence(loopId),
+            loopId = loopId,
+            goal = goal,
+            ramPercent = aiRepository.getRAMUsagePercentage(),
+            temperatureC = aiRepository.getTemperature(),
+            historyJson = aiRepository.getJalebiHistory(loopId),
+            model = aiRepository.getRecommendedLLMModel()
         )
     }
 
-    suspend fun searchMemories(query: String): List<String> {
-        return memoryRepository.searchMemories(query).map { it.content }
-    }
+    suspend fun createNewConversation(title: String = "New Conversation"): Long = conversationRepository.createConversation(title).also { _currentConversationId.value = it }
+    suspend fun getConversation(conversationId: Long) { _currentConversationId.value = conversationRepository.getConversationById(conversationId).first?.id }
+    suspend fun addMessageToConversation(content: String, isUser: Boolean) { _currentConversationId.value?.let { conversationRepository.addMessageToConversation(it, content, isUser) } }
+    fun loadModel(modelName: String) { viewModelScope.launch { if (aiRepository.loadModel(modelName)) _loadedModels.value += modelName } }
+    fun unloadModel(modelName: String) { viewModelScope.launch { if (aiRepository.unloadModel(modelName)) _loadedModels.value -= modelName } }
+    suspend fun remember(content: String, title: String? = null) { memoryRepository.createMemory(content = content, title = title, isImportant = true) }
+    suspend fun searchMemories(query: String): List<String> = memoryRepository.searchMemories(query).map { it.content }
+    suspend fun getPerformanceMode(): String = settingsRepository.getPerformanceMode()
+    suspend fun setPerformanceMode(mode: String) { settingsRepository.setPerformanceMode(mode) }
 
-    // Settings operations
-
-    suspend fun getPerformanceMode(): String {
-        return settingsRepository.getPerformanceMode()
-    }
-
-    suspend fun setPerformanceMode(mode: String) {
-        settingsRepository.setPerformanceMode(mode)
-        // Update native performance mode
-        val nativeMode = when (mode) {
-            "Battery Saver" -> com.livehumanai.livehumanai.nativebridge.NativeBridge.PerformanceMode.BATTERY_SAVER
-            "Performance" -> com.livehumanai.livehumanai.nativebridge.NativeBridge.PerformanceMode.PERFORMANCE
-            "Maximum" -> com.livehumanai.livehumanai.nativebridge.NativeBridge.PerformanceMode.MAXIMUM
-            else -> com.livehumanai.livehumanai.nativebridge.NativeBridge.PerformanceMode.BALANCED
-        }
-        aiRepository.setPerformanceMode(nativeMode)
-    }
-
-    // Performance monitoring
-
-    private fun startPerformanceMonitoring() {
-        viewModelScope.launch {
-            while (true) {
-                val metrics = PerformanceMetrics(
-                    cpuUsage = aiRepository.getCPUUsage(),
-                    ramUsage = aiRepository.getRAMUsagePercentage(),
-                    temperature = aiRepository.getTemperature(),
-                    batteryLevel = aiRepository.getBatteryLevel(),
-                    totalRAM = aiRepository.getTotalRAM(),
-                    availableRAM = aiRepository.getAvailableRAM()
-                )
-                _performanceMetrics.value = metrics
-                // Update every second
-                kotlinx.coroutines.delay(1000)
-            }
+    private fun startPerformanceMonitoring() = viewModelScope.launch {
+        while (true) {
+            _performanceMetrics.value = PerformanceMetrics(
+                aiRepository.getCPUUsage(), aiRepository.getRAMUsagePercentage(), aiRepository.getTemperature(),
+                aiRepository.getBatteryLevel(), aiRepository.getTotalRAM(), aiRepository.getAvailableRAM()
+            )
+            if (jalebiLiveController.isRunning()) refreshJalebiLoop()
+            delay(1000)
         }
     }
 
-    // State classes
-
-    sealed class AIState {
-        object Idle : AIState()
-        object Thinking : AIState()
-        data class Response(val text: String) : AIState()
-        data class Error(val message: String) : AIState()
-    }
-
-    data class PerformanceMetrics(
-        val cpuUsage: Float = 0f,
-        val ramUsage: Float = 0f,
-        val temperature: Float = 0f,
-        val batteryLevel: Float = 0f,
-        val totalRAM: Long = 0,
-        val availableRAM: Long = 0
-    ) {
-        val isThermalCritical: Boolean get() = temperature >= 60
-        val isThermalHot: Boolean get() = temperature >= 50
-        val isBatteryLow: Boolean get() = batteryLevel <= 20
-        val isRAMLow: Boolean get() = ramUsage >= 90
+    sealed class AIState { data object Idle : AIState(); data object Thinking : AIState(); data class Response(val text: String) : AIState(); data class Error(val message: String) : AIState() }
+    data class PerformanceMetrics(val cpuUsage: Float = 0f, val ramUsage: Float = 0f, val temperature: Float = 0f, val batteryLevel: Float = 0f, val totalRAM: Long = 0, val availableRAM: Long = 0) {
+        val isThermalCritical get() = temperature >= 60
+        val isThermalHot get() = temperature >= 50
+        val isBatteryLow get() = batteryLevel <= 20
+        val isRAMLow get() = ramUsage >= 90
     }
 }

@@ -2,7 +2,7 @@ name: Test and Find Errors
 
 on:
   push:
-    branches: [ main, master, "jules-*" ]
+    branches: [ main, master, "jules-*", "feature/**" ]
   pull_request:
     branches: [ main, master ]
   workflow_dispatch:
@@ -11,100 +11,117 @@ jobs:
   test-and-lint:
     name: Test Code and Find Bugs
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-
       - name: Set up JDK 17
         uses: actions/setup-java@v5
         with:
           java-version: '17'
           distribution: 'temurin'
-
-      - name: Run C++ Native Runtime Unit Tests
+      - name: Compile and run native JCL smoke test
         run: |
-          mkdir -p /tmp/android
-          cat << 'EOF' > /tmp/android/log.h
-          #ifndef ANDROID_LOG_H
-          #define ANDROID_LOG_H
-          #define ANDROID_LOG_UNKNOWN 0
-          #define ANDROID_LOG_DEFAULT 1
-          #define ANDROID_LOG_VERBOSE 2
-          #define ANDROID_LOG_DEBUG 3
-          #define ANDROID_LOG_INFO 4
-          #define ANDROID_LOG_WARN 5
-          #define ANDROID_LOG_ERROR 6
-          #define ANDROID_LOG_FATAL 7
-          #define __android_log_print(prio, tag, ...) ((void)0)
-          #endif
-          EOF
-
-          cat << 'EOF' > /tmp/test_native.cpp
-          #include <iostream>
+          cat << 'EOF' > /tmp/test_jcl_native.cpp
           #include <cassert>
-          #include <memory>
-          #include <thread>
-          #include <chrono>
-          #include "NativeEngine.h"
-          #include "ModelRouter.h"
-          #include "TaskScheduler.h"
-          #include "HardwareProfiler.h"
-
+          #include "JalebiNativeRuntime.h"
+          #include "JalebiNativePerception.h"
+          #include "JalebiNativeAudio.h"
+          #include "JalebiNativeMemory.h"
+          #include "JalebiSecurityPolicy.h"
+          using namespace LiveHumanAI;
           int main() {
-              std::cout << "Starting Native AI Runtime unit tests..." << std::endl;
+              JalebiNativeRuntime runtime;
+              assert(runtime.initialize());
+              const int id = runtime.createGoal("test live loop", 3);
+              assert(id > 0 && runtime.start());
 
-              NativeEngine engine;
-              assert(engine.initialize() && "NativeEngine failed to initialize");
-              std::string runtimeStatus = engine.getRuntimeStatus();
-              assert(!runtimeStatus.empty() && "Runtime status should not be empty");
-              std::cout << "[PASS] NativeEngine initialization & runtime status: " << runtimeStatus << std::endl;
+              NativeVisionObservation observation;
+              observation.frame.width = 1280;
+              observation.frame.height = 720;
+              observation.scene = "desk";
+              observation.objects = {"document"};
+              observation.text = {"Name"};
+              observation.confidence = 0.95f;
+              JalebiNativePerception perception;
+              auto world = perception.toWorldState(observation);
+              JalebiNativeRuntime::Input input;
+              input.semanticInput = "document detected";
+              input.world = world;
+              input.confidence = 0.95f;
+              input.evidenceAvailable = true;
+              auto decision = runtime.process(input);
+              assert(decision.runInference);
+              runtime.execute(input.semanticInput);
+              assert(runtime.evaluate(0.95f, true, "verified", "COMPLETE"));
 
-              HardwareProfiler profiler;
-              profiler.initialize();
-              HardwareProfiler::DeviceProfile profile = profiler.getDeviceProfile();
-              std::cout << "[PASS] HardwareProfiler profile detected: " << static_cast<int>(profile) << std::endl;
+              const auto visionDecision = runtime.submitVision("desk", "document", "Name", 0.95f, {}, false);
+              assert(visionDecision.find("runInference") != std::string::npos);
+              const auto speechDecision = runtime.submitSpeech("hello", 0.98f, true, {}, false);
+              assert(speechDecision.find("runInference") != std::string::npos);
+              const auto partialDecision = runtime.submitSpeech("hel", 0.50f, false, {}, false);
+              assert(partialDecision.find("partial_or_empty") != std::string::npos);
 
-              ModelRouter router;
-              router.initialize();
-              router.setDeviceProfile(ModelRouter::DeviceProfile::MID_RANGE);
-              std::string lowRamModel = router.selectModel("text");
-              assert(!lowRamModel.empty() && "MID_RANGE device should select a valid model");
-              std::cout << "[PASS] ModelRouter selected model for MID_RANGE: " << lowRamModel << std::endl;
+              JalebiNativeAudio audio;
+              audio.start();
+              NativeSpeechResult speech{"hello", 0.98f, true};
+              assert(audio.onSpeech(speech) == JalebiConversationLoop::State::UNDERSTANDING);
 
-              router.setDeviceProfile(ModelRouter::DeviceProfile::FLAGSHIP);
-              std::string highRamModel = router.selectModel("text");
-              assert(!highRamModel.empty() && "FLAGSHIP device should select a valid model");
-              std::cout << "[PASS] ModelRouter selected model for FLAGSHIP: " << highRamModel << std::endl;
+              JalebiNativeMemory memory;
+              JalebiMemoryPolicy::Candidate candidate{"approved fact", 0.95f, true, false};
+              assert(memory.promote(candidate));
 
-              TaskScheduler scheduler;
-              scheduler.initialize();
-              bool taskExecuted = false;
-              int taskId = scheduler.scheduleTask("test_task", TaskScheduler::Priority::HIGH, [&taskExecuted]() {
-                  taskExecuted = true;
-              });
-
-              std::this_thread::sleep_for(std::chrono::milliseconds(200));
-              assert(taskExecuted && "TaskScheduler should execute scheduled task");
-              std::cout << "[PASS] TaskScheduler executed scheduled task ID: " << taskId << std::endl;
-
-              scheduler.shutdown();
-              engine.shutdown();
-              router.shutdown();
-
-              std::cout << "All Native AI Runtime unit tests passed successfully!" << std::endl;
+              JalebiSecurityPolicy::Request read{"read_only", true, false, true};
+              assert(JalebiSecurityPolicy::authorize(read));
+              JalebiSecurityPolicy::Request action{"device_control", true, false, true};
+              assert(!JalebiSecurityPolicy::authorize(action));
+              runtime.shutdown();
               return 0;
           }
           EOF
-
-          g++ -std=c++17 -I /tmp -I app/src/main/cpp -I app/src/main/cpp/core -I app/src/main/cpp/ai -I app/src/main/cpp/ai/llm -I app/src/main/cpp/ai/stt -I app/src/main/cpp/ai/tts -I app/src/main/cpp/ai/vision -I app/src/main/cpp/audio -I app/src/main/cpp/memory -I app/src/main/cpp/hardware -I app/src/main/cpp/scheduler -I app/src/main/cpp/security -I app/src/main/cpp/jni -I app/src/main/cpp/utils /tmp/test_native.cpp app/src/main/cpp/core/NativeCore.cpp app/src/main/cpp/core/NativeEngine.cpp app/src/main/cpp/ai/AIEngine.cpp app/src/main/cpp/ai/ModelRouter.cpp app/src/main/cpp/ai/llm/LLMManager.cpp app/src/main/cpp/ai/stt/STTManager.cpp app/src/main/cpp/ai/tts/TTSManager.cpp app/src/main/cpp/ai/vision/VisionManager.cpp app/src/main/cpp/hardware/HardwareProfiler.cpp app/src/main/cpp/hardware/ThermalMonitor.cpp app/src/main/cpp/hardware/BatteryMonitor.cpp app/src/main/cpp/scheduler/TaskScheduler.cpp app/src/main/cpp/utils/Logger.cpp -o /tmp/test_native_runner -lpthread
-          /tmp/test_native_runner
-
+          g++ -std=c++17 -pthread -I app/src/main/cpp -I app/src/main/cpp/ai -I app/src/main/cpp/core -I app/src/main/cpp/security \
+            /tmp/test_jcl_native.cpp app/src/main/cpp/ai/JalebiLoopEngine.cpp app/src/main/cpp/ai/JalebiNativeRuntime.cpp \
+            -o /tmp/test_jcl_native
+          /tmp/test_jcl_native
+      - name: Run native policy tests
+        run: |
+          cat << 'EOF' > /tmp/test_jcl_policy.cpp
+          #include <cassert>
+          #include "JalebiWorldState.h"
+          #include "JalebiModelEscalator.h"
+          #include "JalebiMemoryPolicy.h"
+          #include "JalebiConfidencePolicy.h"
+          #include "JalebiRetryPolicy.h"
+          #include "JalebiResourcePolicy.h"
+          using namespace LiveHumanAI;
+          int main() {
+              JalebiWorldStateTracker tracker;
+              JalebiWorldState a; a.sceneId = "desk"; a.detectedObjects = {"document"};
+              assert(tracker.update(a));
+              JalebiWorldState b = a;
+              assert(!tracker.update(b));
+              JalebiWorldState c = a; c.detectedText = {"Name"};
+              assert(tracker.update(c));
+              assert(JalebiModelEscalator::choose(0.95f, false, true).tier == JalebiModelEscalator::Tier::SMALL);
+              assert(JalebiModelEscalator::choose(0.50f, false, false).tier == JalebiModelEscalator::Tier::MEDIUM);
+              assert(JalebiModelEscalator::choose(0.20f, true, true).degraded);
+              JalebiMemoryPolicy::Candidate candidate{"stable preference", 0.95f, true, false};
+              assert(JalebiMemoryPolicy::shouldStore(candidate));
+              candidate.sensitive = true;
+              assert(!JalebiMemoryPolicy::shouldStore(candidate));
+              assert(JalebiConfidencePolicy::decide(0.95f, true, false, false) == JalebiConfidencePolicy::Decision::ACCEPT);
+              assert(JalebiConfidencePolicy::decide(0.50f, true, false, false) == JalebiConfidencePolicy::Decision::RECHECK);
+              assert(JalebiConfidencePolicy::decide(0.80f, true, false, false) == JalebiConfidencePolicy::Decision::ESCALATE);
+              assert(JalebiRetryPolicy::mayRetry(0, true, true));
+              assert(!JalebiRetryPolicy::mayRetry(3, true, true));
+              assert(JalebiResourcePolicy::evaluate({95, 20, 30, 80}) == JalebiResourcePolicy::Decision::PAUSE);
+              return 0;
+          }
+          EOF
+          g++ -std=c++17 -I app/src/main/cpp/ai /tmp/test_jcl_policy.cpp -o /tmp/test_jcl_policy
+          /tmp/test_jcl_policy
       - name: Make Gradle Wrapper Executable
         run: chmod +x gradlew || gradle wrapper
-
       - name: Run Android Unit Tests
         run: ./gradlew test
-
       - name: Run Android Lint Checks
         run: ./gradlew lint
