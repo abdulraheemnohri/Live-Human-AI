@@ -3,7 +3,7 @@
 
 #include <string>
 #include <vector>
-#include <memory>
+#include <cstddef>
 
 #ifdef HAVE_OPENCV
 #include <opencv2/core.hpp>
