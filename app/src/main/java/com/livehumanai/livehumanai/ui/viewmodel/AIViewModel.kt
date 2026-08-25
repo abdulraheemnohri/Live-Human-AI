@@ -7,14 +7,17 @@ import com.livehumanai.livehumanai.data.repository.ConversationRepository
 import com.livehumanai.livehumanai.data.repository.MemoryRepository
 import com.livehumanai.livehumanai.data.repository.ModelRepository
 import com.livehumanai.livehumanai.data.repository.SettingsRepository
+import com.livehumanai.livehumanai.jalebi.JalebiCameraAnalyzer
 import com.livehumanai.livehumanai.jalebi.JalebiLiveController
 import com.livehumanai.livehumanai.jalebi.JalebiTelemetry
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import org.json.JSONObject
 import javax.inject.Inject
 
 @HiltViewModel
@@ -43,7 +46,11 @@ class AIViewModel @Inject constructor(
         startPerformanceMonitoring()
     }
 
-    override fun onCleared() { jalebiLiveController.stop(); aiRepository.shutdown(); super.onCleared() }
+    override fun onCleared() {
+        jalebiLiveController.stop()
+        aiRepository.shutdown()
+        super.onCleared()
+    }
 
     fun generateResponse(prompt: String, conversationId: Long? = null, modelName: String = "") {
         viewModelScope.launch {
@@ -52,45 +59,62 @@ class AIViewModel @Inject constructor(
                 val response = aiRepository.generate(prompt, modelName, settingsRepository.getTemperature(), settingsRepository.getMaxTokens())
                 conversationId?.let { conversationRepository.addMessageToConversation(it, response, false) }
                 _aiState.value = AIState.Response(response)
-            } catch (e: Exception) { _aiState.value = AIState.Error(e.message ?: "Unknown error") }
+            } catch (e: Exception) {
+                _aiState.value = AIState.Error(e.message ?: "Unknown error")
+            }
         }
     }
 
     fun stopGeneration() { aiRepository.stopGeneration(); _aiState.value = AIState.Idle }
 
     fun startJalebiLoop(goal: String, maxIterations: Int = 8): Boolean {
-        val id = jalebiLiveController.start(goal, maxIterations) ?: run { _jclTelemetry.value = _jclTelemetry.value.copy(state = "FAILED"); return false }
-        refreshJalebiLoop(id, goal); return true
+        val id = jalebiLiveController.start(goal, maxIterations) ?: run {
+            _jclTelemetry.value = _jclTelemetry.value.copy(state = "FAILED")
+            return false
+        }
+        refreshJalebiLoop(id, goal)
+        return true
     }
+
     fun startLiveJalebi(goal: String = "Continuously understand the current user context", maxIterations: Int = 8): Boolean = startJalebiLoop(goal, maxIterations)
 
     fun submitLivePerception(input: String, evaluation: suspend (String) -> JalebiLiveController.Evaluation) {
         jalebiLiveController.submitPerception(input, evaluation)
-        viewModelScope.launch { delay(25); refreshJalebiLoop(jalebiLiveController.currentLoopId()) }
+        viewModelScope.launch { delay(25); refreshJalebiLoop() }
+    }
+
+    fun submitJalebiCameraFrame(frame: JalebiCameraAnalyzer.FrameSignal) {
+        if (jalebiLiveController.currentLoopId() == null) return
+        submitLivePerception("camera frame ${frame.timestampMs} checksum=${frame.checksum}") {
+            val raw = aiRepository.analyzeVisionRgba(frame.rgba, frame.width, frame.height, aiRepository.getRecommendedVisionModel())
+            val json = runCatching { JSONObject(raw) }.getOrNull()
+            val scene = json?.optString("sceneId", "camera") ?: "camera"
+            val confidence = json?.optDouble("confidence", 0.0)?.toFloat()?.coerceIn(0f, 1f) ?: 0f
+            val objects = buildList {
+                json?.optJSONArray("objects")?.let { a -> for (i in 0 until a.length()) add(a.optString(i)) }
+            }
+            val text = buildList {
+                json?.optJSONArray("text")?.let { a -> for (i in 0 until a.length()) add(a.optString(i)) }
+            }
+            val tool = jalebiLiveController.currentLoopId()?.let { id -> aiRepository.submitJalebiVision(id, scene, objects, text, confidence) } ?: ""
+            JalebiLiveController.Evaluation(confidence, false, "scene=$scene objects=${objects.joinToString()} text=${text.joinToString()} tool=$tool", if (confidence < 0.9f) "Re-perceive scene" else "Wait for meaningful scene change")
+        }
     }
 
     fun stopLiveJalebi() { jalebiLiveController.stop(); _jclTelemetry.value = _jclTelemetry.value.copy(state = "CANCELLED", loopId = null) }
     fun pauseJalebiLoop() { jalebiLiveController.pause(); refreshJalebiLoop() }
     fun resumeJalebiLoop() { jalebiLiveController.resume(); refreshJalebiLoop() }
     fun replanJalebiLoop(reason: String = "manual_replan") { jalebiLiveController.currentLoopId()?.let { id -> aiRepository.replanJalebiLoop(id, reason); refreshJalebiLoop(id) } }
-
     fun executeJalebiIteration(input: String) { jalebiLiveController.currentLoopId()?.let { id -> aiRepository.executeJalebiIteration(id, input); refreshJalebiLoop(id) } }
-    fun evaluateJalebiLoop(confidence: Float, goalCompleted: Boolean, evaluation: String, nextAction: String, memoryUpdates: String = "") {
-        jalebiLiveController.currentLoopId()?.let { id ->
-            aiRepository.evaluateJalebiLoop(id, confidence, goalCompleted, evaluation, nextAction, memoryUpdates)
-            if (!goalCompleted && confidence < 0.90f) aiRepository.replanJalebiLoop(id, "confidence_below_threshold")
-            refreshJalebiLoop(id)
-        }
-    }
+    fun evaluateJalebiLoop(confidence: Float, goalCompleted: Boolean, evaluation: String, nextAction: String, memoryUpdates: String = "") { jalebiLiveController.currentLoopId()?.let { id -> aiRepository.evaluateAndReplanIfNeeded(id, confidence, goalCompleted, evaluation, nextAction, memoryUpdates); refreshJalebiLoop(id) } }
 
-    /** Execute one bounded model escalation and expose its result to the UI. */
-    fun generateWithConfidenceEscalation(prompt: String, modelName: String = aiRepository.getRecommendedLLMModel(), threshold: Float = 0.90f, maxEscalations: Int = 2, maxTokens: Int = 512, confidence: (String, String) -> Float) {
+    fun generateWithConfidenceEscalation(prompt: String, modelName: String = aiRepository.getRecommendedLLMModel(), threshold: Float = 0.9f, maxEscalations: Int = 2, maxTokens: Int = 512, confidence: (String, String) -> Float) {
         viewModelScope.launch {
             try {
                 _aiState.value = AIState.Thinking
                 val result = aiRepository.generateWithConfidenceEscalation(prompt, modelName, threshold, maxEscalations, maxTokens, confidence)
-                _aiState.value = if (result.verified) AIState.Response(result.answer) else AIState.Error("AI result could not be verified (confidence %.2f, model %s)".format(result.confidence, result.model))
-                jalebiLiveController.currentLoopId()?.let { refreshJalebiLoop(it) }
+                _aiState.value = if (result.verified) AIState.Response(result.answer) else AIState.Error("AI result could not be verified")
+                refreshJalebiLoop()
             } catch (e: Exception) { _aiState.value = AIState.Error(e.message ?: "Confidence escalation failed") }
         }
     }
@@ -101,7 +125,17 @@ class AIViewModel @Inject constructor(
 
     fun refreshJalebiLoop(loopId: Int? = jalebiLiveController.currentLoopId(), goal: String = _jclTelemetry.value.goal) {
         loopId ?: return
-        _jclTelemetry.value = _jclTelemetry.value.copy(state = aiRepository.getJalebiLoopState(loopId), iteration = aiRepository.getJalebiIteration(loopId), confidence = aiRepository.getJalebiConfidence(loopId), loopId = loopId, goal = goal, ramPercent = aiRepository.getRAMUsagePercentage(), temperatureC = aiRepository.getTemperature(), historyJson = aiRepository.getJalebiHistory(loopId), model = aiRepository.getRecommendedLLMModel())
+        _jclTelemetry.value = _jclTelemetry.value.copy(
+            state = aiRepository.getJalebiLoopState(loopId),
+            iteration = aiRepository.getJalebiIteration(loopId),
+            confidence = aiRepository.getJalebiConfidence(loopId),
+            loopId = loopId,
+            goal = goal,
+            ramPercent = aiRepository.getRAMUsagePercentage(),
+            temperatureC = aiRepository.getTemperature(),
+            historyJson = aiRepository.getJalebiHistory(loopId),
+            model = aiRepository.getRecommendedLLMModel()
+        )
     }
 
     suspend fun createNewConversation(title: String = "New Conversation"): Long = conversationRepository.createConversation(title).also { _currentConversationId.value = it }
@@ -114,7 +148,7 @@ class AIViewModel @Inject constructor(
     suspend fun getPerformanceMode(): String = settingsRepository.getPerformanceMode()
     suspend fun setPerformanceMode(mode: String) { settingsRepository.setPerformanceMode(mode) }
 
-    private fun startPerformanceMonitoring() = viewModelScope.launch {
+    private fun startPerformanceMonitoring() = viewModelScope.launch(Dispatchers.Default) {
         while (true) {
             _performanceMetrics.value = PerformanceMetrics(aiRepository.getCPUUsage(), aiRepository.getRAMUsagePercentage(), aiRepository.getTemperature(), aiRepository.getBatteryLevel(), aiRepository.getTotalRAM(), aiRepository.getAvailableRAM())
             if (jalebiLiveController.isRunning()) refreshJalebiLoop()
@@ -122,11 +156,19 @@ class AIViewModel @Inject constructor(
         }
     }
 
-    sealed class AIState { data object Idle : AIState(); data object Thinking : AIState(); data class Response(val text: String) : AIState(); data class Error(val message: String) : AIState() }
-    data class PerformanceMetrics(val cpuUsage: Float = 0f, val ramUsage: Float = 0f, val temperature: Float = 0f, val batteryLevel: Float = 0f, val totalRAM: Long = 0, val availableRAM: Long = 0) {
-        val isThermalCritical get() = temperature >= 60
-        val isThermalHot get() = temperature >= 50
-        val isBatteryLow get() = batteryLevel <= 20
-        val isRAMLow get() = ramUsage >= 90
+    sealed class AIState {
+        data object Idle : AIState()
+        data object Thinking : AIState()
+        data class Response(val text: String) : AIState()
+        data class Error(val message: String) : AIState()
     }
+
+    data class PerformanceMetrics(
+        val cpuUsage: Float = 0f,
+        val ramUsage: Float = 0f,
+        val temperature: Float = 0f,
+        val batteryLevel: Float = 0f,
+        val totalRAM: Long = 0,
+        val availableRAM: Long = 0
+    )
 }
