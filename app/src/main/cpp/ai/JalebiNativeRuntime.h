@@ -38,6 +38,7 @@ public:
         bool runInference = false;
         bool paused = false;
         bool terminal = false;
+        bool safetyBlocked = false;
         std::string reason;
     };
 
@@ -92,41 +93,7 @@ public:
 
     Decision process(const Input& input) {
         std::lock_guard<std::mutex> lock(m_mutex);
-        Decision d;
-        if (!m_initialized || m_activeLoop <= 0) {
-            d.reason = "runtime_not_ready";
-            return d;
-        }
-
-        const auto state = m_engine.getLoopState(m_activeLoop);
-        if (state == JalebiLoopEngine::LoopState::CANCELLED ||
-            state == JalebiLoopEngine::LoopState::COMPLETED ||
-            state == JalebiLoopEngine::LoopState::FAILED ||
-            state == JalebiLoopEngine::LoopState::RESOURCE_LIMIT ||
-            state == JalebiLoopEngine::LoopState::SAFETY_BLOCKED) {
-            d.terminal = true;
-            d.reason = m_engine.getStateName(state);
-            return d;
-        }
-
-        d.resourceDecision = JalebiResourcePolicy::evaluate(input.resources);
-        d.paused = d.resourceDecision == JalebiResourcePolicy::Decision::PAUSE;
-        if (d.paused) {
-            d.reason = "resource_limit";
-            m_engine.pauseLoop(m_activeLoop);
-            return d;
-        }
-
-        d.sceneChanged = m_world.update(input.world);
-        const bool degraded = d.resourceDecision == JalebiResourcePolicy::Decision::REDUCE_WORKLOAD;
-        d.confidenceDecision = JalebiConfidencePolicy::decide(input.confidence, input.evidenceAvailable, false, degraded);
-        d.modelTier = JalebiModelEscalator::choose(input.confidence, degraded, input.flagshipDevice).tier;
-
-        // A meaningful world change must always get one inference opportunity.
-        // Stable high-confidence observations are suppressed to save battery/CPU.
-        d.runInference = d.sceneChanged || d.confidenceDecision != JalebiConfidencePolicy::Decision::ACCEPT;
-        d.reason = d.runInference ? "inference_required" : "stable_high_confidence";
-        return d;
+        return processLocked(input);
     }
 
     std::string submitVision(const std::string& sceneId, const std::string& objects, const std::string& text,
@@ -144,7 +111,7 @@ public:
 
         std::lock_guard<std::mutex> lock(m_mutex);
         Decision d = processLocked(input);
-        if (!d.runInference || d.paused || d.terminal) return decisionJson(d);
+        if (!d.runInference || d.paused || d.terminal || d.safetyBlocked) return decisionJson(d);
         executeLocked(input.semanticInput);
         return decisionJson(d);
     }
@@ -152,7 +119,7 @@ public:
     std::string submitSpeech(const std::string& transcript, float confidence, bool isFinal,
                              const JalebiResourceSnapshot& resources, bool flagshipDevice) {
         if (!isFinal || transcript.empty()) {
-            return "{\"runInference\":false,\"paused\":false,\"terminal\":false,\"sceneChanged\":false,\"confidence\":\"recheck\",\"resource\":\"allow\",\"model\":\"small\",\"reason\":\"partial_or_empty\"}";
+            return "{\"runInference\":false,\"paused\":false,\"terminal\":false,\"safetyBlocked\":false,\"sceneChanged\":false,\"confidence\":\"recheck\",\"resource\":\"allow\",\"model\":\"small\",\"reason\":\"partial_or_empty\"}";
         }
 
         Input input;
@@ -167,7 +134,7 @@ public:
 
         std::lock_guard<std::mutex> lock(m_mutex);
         Decision d = processLocked(input);
-        if (!d.runInference || d.paused || d.terminal) return decisionJson(d);
+        if (!d.runInference || d.paused || d.terminal || d.safetyBlocked) return decisionJson(d);
         executeLocked(input.semanticInput);
         return decisionJson(d);
     }
@@ -232,6 +199,15 @@ private:
             state == JalebiLoopEngine::LoopState::SAFETY_BLOCKED) {
             d.terminal = true;
             d.reason = m_engine.getStateName(state);
+            return d;
+        }
+
+        // Perception is permission-bound. A missing Android permission must
+        // stop the cognitive cycle instead of silently attempting access.
+        if (!input.world.permissionAvailable) {
+            d.safetyBlocked = true;
+            d.reason = "permission_unavailable";
+            m_engine.failLoop(m_activeLoop, d.reason);
             return d;
         }
 
@@ -307,6 +283,7 @@ private:
         out << "{\"runInference\":" << (d.runInference ? "true" : "false")
             << ",\"paused\":" << (d.paused ? "true" : "false")
             << ",\"terminal\":" << (d.terminal ? "true" : "false")
+            << ",\"safetyBlocked\":" << (d.safetyBlocked ? "true" : "false")
             << ",\"sceneChanged\":" << (d.sceneChanged ? "true" : "false")
             << ",\"confidence\":\"" << confidenceName(d.confidenceDecision)
             << "\",\"resource\":\"" << resourceName(d.resourceDecision)
