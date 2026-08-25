@@ -16,7 +16,7 @@ import com.livehumanai.livehumanai.data.repository.SettingsRepository
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
-/** Real Android SpeechRecognizer bridge. Semantic final transcripts can feed JCL. */
+/** Real Android SpeechRecognizer bridge. The app owns the shared native runtime lifecycle. */
 @AndroidEntryPoint
 class STTService : Service() {
     @Inject lateinit var aiRepository: AIRepository
@@ -30,16 +30,12 @@ class STTService : Service() {
         private set
 
     inner class STTServiceBinder : Binder() { fun getService(): STTService = this@STTService }
-
     override fun onBind(intent: Intent?): IBinder = binder
 
     override fun onCreate() {
         super.onCreate()
-        aiRepository.initialize()
         if (SpeechRecognizer.isRecognitionAvailable(this)) {
-            recognizer = SpeechRecognizer.createSpeechRecognizer(this).apply {
-                setRecognitionListener(listener)
-            }
+            recognizer = SpeechRecognizer.createSpeechRecognizer(this).apply { setRecognitionListener(listener) }
         }
     }
 
@@ -47,25 +43,17 @@ class STTService : Service() {
         stopRecognition()
         recognizer?.destroy()
         recognizer = null
-        aiRepository.shutdown()
         super.onDestroy()
     }
 
-    fun startRecognition(callback: (String) -> Unit) {
-        startRecognitionInternal(null, callback)
-    }
+    fun startRecognition(callback: (String) -> Unit) { startRecognitionInternal(null, callback) }
 
     /** Starts real speech recognition and forwards final semantic text to JCL. */
-    fun startLiveRecognition(loopId: Int, callback: (String) -> Unit = {}) {
-        startRecognitionInternal(loopId, callback)
-    }
+    fun startLiveRecognition(loopId: Int, callback: (String) -> Unit = {}) { startRecognitionInternal(loopId, callback) }
 
     private fun startRecognitionInternal(loopId: Int?, callback: (String) -> Unit) {
         if (isRecognizing) return
-        val speechRecognizer = recognizer ?: run {
-            callback("Error: speech recognition unavailable")
-            return
-        }
+        val speechRecognizer = recognizer ?: run { callback("Error: speech recognition unavailable"); return }
         liveLoopId = loopId
         recognitionCallback = callback
         isRecognizing = true
