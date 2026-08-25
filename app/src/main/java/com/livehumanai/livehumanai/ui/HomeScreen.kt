@@ -9,17 +9,96 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.livehumanai.livehumanai.ui.components.AiOrb
+import com.livehumanai.livehumanai.ui.components.AiOrbState
 import com.livehumanai.livehumanai.ui.theme.LiveHumanAITheme
 
 @Composable
-fun HomeScreen(onNavigateToChat:()->Unit={},onNavigateToCamera:()->Unit={},onNavigateToSettings:()->Unit={},onNavigateToJalebi:()->Unit={}){
- var runtimeStatus by remember{mutableStateOf("Ready")};var deviceProfile by remember{mutableStateOf("Balanced")}
- LaunchedEffect(Unit){val n=com.livehumanai.livehumanai.nativebridge.NativeBridge.getInstance();if(n.isInitialized){runtimeStatus=n.getRuntimeStatus();deviceProfile=n.getDeviceProfile()}}
- Column(Modifier.fillMaxSize().padding(16.dp),verticalArrangement=Arrangement.Center,horizontalAlignment=Alignment.CenterHorizontally){
-  Text("Live Human AI",style=MaterialTheme.typography.headlineMedium,color=MaterialTheme.colorScheme.primary);Spacer(Modifier.height(8.dp));Text("Status: $runtimeStatus");Text("Profile: $deviceProfile");Spacer(Modifier.height(28.dp));Text("● READY",style=MaterialTheme.typography.displaySmall,color=MaterialTheme.colorScheme.primary);Spacer(Modifier.height(28.dp));Text("How can I help?",style=MaterialTheme.typography.bodyLarge);Spacer(Modifier.height(20.dp))
-  Row(horizontalArrangement=Arrangement.spacedBy(18.dp)){IconButton(onClick=onNavigateToChat,modifier=Modifier.size(64.dp)){Icon(Icons.Default.Mic,"Voice Input")};IconButton(onClick=onNavigateToCamera,modifier=Modifier.size(64.dp)){Icon(Icons.Default.Videocam,"Camera")}}
-  Spacer(Modifier.height(20.dp));Button(onClick=onNavigateToJalebi){Text("Jalebi Cognitive Loop")};Spacer(Modifier.height(16.dp));Text("Bounded • Permission-aware • Resource-aware",style=MaterialTheme.typography.bodySmall)
-  IconButton(onClick=onNavigateToSettings,modifier=Modifier.align(Alignment.End)){Icon(Icons.Default.Settings,"Settings")}
- }
+fun HomeScreen(
+    onNavigateToChat: () -> Unit = {},
+    onNavigateToCamera: () -> Unit = {},
+    onNavigateToSettings: () -> Unit = {},
+    onNavigateToJalebi: () -> Unit = {}
+) {
+    var runtimeStatus by remember { mutableStateOf("Ready") }
+    var deviceProfile by remember { mutableStateOf("Balanced") }
+    var promptInput by remember { mutableStateOf("") }
+
+    LaunchedEffect(Unit) {
+        val n = com.livehumanai.livehumanai.nativebridge.NativeBridge.getInstance()
+        if (n.isInitialized) {
+            runtimeStatus = n.getRuntimeStatus()
+            deviceProfile = n.getDeviceProfile()
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.SpaceBetween
+    ) {
+        // Top App Bar
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Live Human AI", style = MaterialTheme.typography.titleLarge)
+            IconButton(onClick = onNavigateToSettings) {
+                Icon(Icons.Default.Settings, contentDescription = "Settings")
+            }
+        }
+
+        // Center AI Console
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            AiOrb(state = AiOrbState.IDLE, size = 120.dp)
+
+            Text("AI READY", style = MaterialTheme.typography.titleLarge)
+            Text("\"How can I help?\"", style = MaterialTheme.typography.bodyLarge)
+
+            OutlinedTextField(
+                value = promptInput,
+                onValueChange = { promptInput = it },
+                placeholder = { Text("Ask anything...") },
+                modifier = Modifier.fillMaxWidth(),
+                trailingIcon = {
+                    IconButton(onClick = onNavigateToChat) {
+                        Icon(Icons.Default.Send, contentDescription = "Send Prompt")
+                    }
+                }
+            )
+
+            Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                IconButton(onClick = onNavigateToChat, modifier = Modifier.size(56.dp)) {
+                    Icon(Icons.Default.Mic, contentDescription = "Voice Input")
+                }
+                IconButton(onClick = onNavigateToCamera, modifier = Modifier.size(56.dp)) {
+                    Icon(Icons.Default.Videocam, contentDescription = "Camera Input")
+                }
+            }
+        }
+
+        // Today's AI Summary Card
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Today's AI Console", style = MaterialTheme.typography.titleMedium)
+                Text("Status: $runtimeStatus • Profile: $deviceProfile", style = MaterialTheme.typography.bodyMedium)
+                Text("Offline Mode ✓", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                Button(onClick = onNavigateToJalebi, modifier = Modifier.fillMaxWidth()) {
+                    Text("Jalebi Cognitive Loop Console")
+                }
+            }
+        }
+    }
 }
-@Preview(showBackground=true) @Composable fun HomeScreenPreview(){LiveHumanAITheme{HomeScreen()}}
+
+@Preview(showBackground = true)
+@Composable
+fun HomeScreenPreview() {
+    LiveHumanAITheme { HomeScreen() }
+}

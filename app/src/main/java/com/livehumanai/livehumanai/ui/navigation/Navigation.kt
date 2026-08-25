@@ -1,27 +1,16 @@
 package com.livehumanai.livehumanai.ui.navigation
 
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Chat
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Videocam
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
@@ -29,43 +18,61 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 
 /**
- * Navigation provides the bottom navigation bar for the app.
+ * 5-Section Bottom Navigation System (Home, Chat, Vision, Memory, More) with Floating Actions.
  */
 @Composable
 fun Navigation() {
     val navController = rememberNavController()
-
-    // Track the current destination
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
 
-    // Main content with bottom navigation
-    NavGraph()
-
-    // Only show bottom navigation for main screens
-    if (shouldShowBottomNav(currentDestination)) {
-        BottomNavigationBar(
-            navController = navController,
-            currentDestination = currentDestination
-        )
+    Scaffold(
+        bottomBar = {
+            if (shouldShowBottomNav(currentDestination)) {
+                BottomNavigationBar(
+                    navController = navController,
+                    currentDestination = currentDestination
+                )
+            }
+        },
+        floatingActionButton = {
+            if (shouldShowBottomNav(currentDestination)) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    FloatingActionButton(
+                        onClick = { navController.navigate(Screen.Chat.route) },
+                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                    ) {
+                        Icon(Icons.Default.Mic, contentDescription = "Voice Input")
+                    }
+                    FloatingActionButton(
+                        onClick = { navController.navigate(Screen.Vision.route) },
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer
+                    ) {
+                        Icon(Icons.Default.Videocam, contentDescription = "Camera Input")
+                    }
+                }
+            }
+        }
+    ) { padding ->
+        Box(modifier = Modifier.padding(padding)) {
+            NavGraph(navController = navController)
+        }
     }
 }
 
-/**
- * Determines if the bottom navigation should be shown for the current destination.
- */
 private fun shouldShowBottomNav(destination: androidx.navigation.NavDestination?): Boolean {
     return destination?.route in listOf(
         Screen.Home.route,
         Screen.Chat.route,
         Screen.Vision.route,
-        Screen.Models.route
+        Screen.Memory.route,
+        Screen.Settings.route
     )
 }
 
-/**
- * BottomNavigationBar displays the bottom navigation bar with items.
- */
 @Composable
 fun BottomNavigationBar(
     navController: NavHostController,
@@ -88,9 +95,14 @@ fun BottomNavigationBar(
             label = "Vision"
         ),
         BottomNavItem(
-            route = Screen.Models.route,
-            icon = Icons.Default.Settings,
-            label = "Models"
+            route = Screen.Memory.route,
+            icon = Icons.Default.Psychology,
+            label = "Memory"
+        ),
+        BottomNavItem(
+            route = Screen.Settings.route,
+            icon = Icons.Default.MoreHoriz,
+            label = "More"
         )
     )
 
@@ -102,16 +114,10 @@ fun BottomNavigationBar(
                 selected = selected,
                 onClick = {
                     navController.navigate(item.route) {
-                        // Pop up to the start destination of the graph to
-                        // avoid building up a large stack of destinations
-                        // on the back stack as users select items
                         popUpTo(navController.graph.findStartDestination().id) {
                             saveState = true
                         }
-                        // Avoid multiple copies of the same destination when
-                        // reselecting the same item
                         launchSingleTop = true
-                        // Restore state when reselecting a previously selected item
                         restoreState = true
                     }
                 },
@@ -122,18 +128,12 @@ fun BottomNavigationBar(
     }
 }
 
-/**
- * Represents an item in the bottom navigation bar.
- */
 data class BottomNavItem(
     val route: String,
     val icon: ImageVector,
     val label: String
 )
 
-/**
- * TopNavigationBar provides a top navigation bar with back button and title.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TopNavigationBar(
