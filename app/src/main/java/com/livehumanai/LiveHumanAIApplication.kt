@@ -73,9 +73,8 @@ class LiveHumanAIApplication : Application(), Configuration.Provider {
         instance = null
     }
     
-    override fun getWorkManagerConfiguration(): Configuration {
-        return Configuration.Builder()
+    override val workManagerConfiguration: Configuration
+        get() = Configuration.Builder()
             .setMinimumLoggingLevel(Log.INFO)
             .build()
-    }
 }
