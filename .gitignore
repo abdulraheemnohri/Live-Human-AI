@@ -1,77 +1,82 @@
-# Android Studio
-*.iml
-.idea/
-
-# Gradle
+```
+# Build and intermediate files
 build/
-.gradle/
-!gradle/wrapper/gradle-wrapper.jar
-
-# Local history for Android Studio
-.localHistory/
-
-# Android NDK
-*.so
-*.a
+cmake-build-*/
 *.o
 *.obj
+*.a
+*.lib
+*.so
+*.dylib
+*.dll
+*.exe
 
-# Android build outputs
-app/build/
-app/.externalNativeBuild/
-app/.cxx/
-.cxx/
+# Gradle
+.gradle/
+build/
 
 # CMake
 CMakeFiles/
-cmake-build/
+CMakeCache.txt
+cmake_install.manifest
+Makefile
 
-# Native libraries
-*.so
-*.dll
-*.dylib
+# Android
+*.apk
+*.aar
+local.properties
+captures/
+.externalNativeBuild
+.gradle
+.idea/
 
-# Model files (to be downloaded separately)
-*.gguf
-*.bin
-*.safetensors
+# JNI
+obj/
+.libs/
+
+# Dependencies
+node_modules/
+vendor/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
 
 # Logs
 *.log
 
-# Environment files
+# Environment
 .env
 .env.local
+*.env.*
 
-# Keystore files
-*.jks
-*.keystore
+# Coverage
+coverage/
+htmlcov/
+.coverage
 
-# IDE
-*.swp
-*.swo
-*~
-
-# OS
-.DS_Store
-Thumbs.db
+# Python (if any Python files exist in the project)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.nox/
+.pytest_cache/
+.mypy_cache/
 
 # Temporary files
-temp/
-tmp/
-
-# Cache
-.cache/
-
-# Local properties
-local.properties
-
-# Test outputs
-/test/
-
-# Coverage reports
-coverage/
-
-# Emulator
-*.avd/
-*.ini
+*.tmp
+*~
+.DS_Store
+Thumbs.db
+```
