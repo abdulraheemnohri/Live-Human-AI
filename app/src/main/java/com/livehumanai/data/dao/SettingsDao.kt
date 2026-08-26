@@ -33,6 +33,7 @@ interface SettingsDao {
     @Query("SELECT value FROM settings WHERE key = :key LIMIT 1")
     fun getSettingValueFlow(key: String): Flow<String?>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun setSettingValue(key: String, value: String, type: String = "string")
+    suspend fun setSettingValue(key: String, value: String, type: String = "string") {
+        insertSetting(SettingsEntity(key = key, value = value, type = type))
+    }
 }
