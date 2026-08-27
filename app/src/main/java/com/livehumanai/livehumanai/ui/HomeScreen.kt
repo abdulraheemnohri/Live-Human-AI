@@ -2,6 +2,7 @@ package com.livehumanai.livehumanai.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -68,7 +69,7 @@ fun HomeScreen(
                 modifier = Modifier.fillMaxWidth(),
                 trailingIcon = {
                     IconButton(onClick = onNavigateToChat) {
-                        Icon(Icons.Default.Send, contentDescription = "Send Prompt")
+                        Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send Prompt")
                     }
                 }
             )
