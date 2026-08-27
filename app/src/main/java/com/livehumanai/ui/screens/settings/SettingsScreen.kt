@@ -1,9 +1,13 @@
-package com.livehumanai.ui.settings
+package com.livehumanai.ui.screens.settings
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -28,7 +32,7 @@ fun SettingsScreen(
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
-                            androidx.compose.material.icons.Icons.Default.ArrowBack,
+                            Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back"
                         )
                     }
@@ -234,7 +238,7 @@ fun SettingsScreen(
                     )
                 ) {
                     Icon(
-                        androidx.compose.material.icons.Icons.Default.Delete,
+                        Icons.Default.Delete,
                         contentDescription = null,
                         modifier = Modifier.size(18.dp)
                     )
@@ -369,7 +373,7 @@ private fun SettingsDropdownItem(
                     color = MaterialTheme.colorScheme.primary
                 )
                 Icon(
-                    androidx.compose.material.icons.Icons.Default.KeyboardArrowDown,
+                    Icons.Default.KeyboardArrowDown,
                     contentDescription = "Select",
                     modifier = Modifier.size(20.dp)
                 )
@@ -420,7 +424,7 @@ private fun SettingsNavigationItem(
             )
         }
         Icon(
-            androidx.compose.material.icons.Icons.Default.ChevronRight,
+            Icons.AutoMirrored.Filled.KeyboardArrowRight,
             contentDescription = "Navigate",
             tint = MaterialTheme.colorScheme.onSurfaceVariant
         )

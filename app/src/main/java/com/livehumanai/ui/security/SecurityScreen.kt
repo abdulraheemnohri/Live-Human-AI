@@ -2,6 +2,9 @@ package com.livehumanai.ui.security
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -28,7 +31,7 @@ fun SecurityScreen(
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
-                            androidx.compose.material.icons.Icons.Default.ArrowBack,
+                            Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back"
                         )
                     }
@@ -61,7 +64,7 @@ fun SecurityScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
-                                androidx.compose.material.icons.Icons.Default.Shield,
+                                Icons.Default.Shield,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.onPrimaryContainer
                             )
@@ -155,7 +158,7 @@ fun SecurityScreen(
                         )
                     ) {
                         Icon(
-                            androidx.compose.material.icons.Icons.Default.DeleteForever,
+                            Icons.Default.DeleteForever,
                             contentDescription = null,
                             modifier = Modifier.size(18.dp)
                         )
@@ -301,6 +304,7 @@ private fun SecurityInfoItem(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SecurityDropdownItem(
     title: String,
