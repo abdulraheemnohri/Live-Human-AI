@@ -18,6 +18,7 @@ class NativeBridge {
     fun unloadModel(modelName: String): Boolean = nativeUnloadModel(nativeHandle, modelName)
     fun generate(prompt: String, modelName: String = "", temperature: Float = .7f, maxTokens: Int = 512): String = nativeGenerate(nativeHandle, prompt, modelName, temperature, maxTokens)
     fun stopGeneration() = nativeStopGeneration(nativeHandle)
+    fun resetContext() = stopGeneration()
     fun getTotalRAM(): Long = nativeGetTotalRAM(nativeHandle)
     fun getAvailableRAM(): Long = nativeGetAvailableRAM(nativeHandle)
     fun getRAMUsagePercentage(): Float = nativeGetRAMUsagePercentage(nativeHandle)
