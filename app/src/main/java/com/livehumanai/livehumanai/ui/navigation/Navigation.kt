@@ -69,7 +69,7 @@ private fun shouldShowBottomNav(destination: androidx.navigation.NavDestination?
         Screen.Chat.route,
         Screen.Vision.route,
         Screen.Memory.route,
-        Screen.Settings.route
+        Screen.More.route
     )
 }
 
@@ -100,7 +100,7 @@ fun BottomNavigationBar(
             label = "Memory"
         ),
         BottomNavItem(
-            route = Screen.Settings.route,
+            route = Screen.More.route,
             icon = Icons.Default.MoreHoriz,
             label = "More"
         )
