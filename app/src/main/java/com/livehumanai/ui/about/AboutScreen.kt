@@ -3,6 +3,9 @@ package com.livehumanai.ui.about
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -29,7 +32,7 @@ fun AboutScreen(
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
-                            androidx.compose.material.icons.Icons.Default.ArrowBack,
+                            Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back"
                         )
                     }
@@ -116,37 +119,37 @@ fun AboutScreen(
             Spacer(modifier = Modifier.height(16.dp))
             
             FeatureItem(
-                icon = androidx.compose.material.icons.Icons.Default.Psychology,
+                icon = Icons.Default.Psychology,
                 title = "Local LLM Inference",
                 description = "Run powerful language models directly on your device"
             )
             
             FeatureItem(
-                icon = androidx.compose.material.icons.Icons.Default.RecordVoiceOver,
+                icon = Icons.Default.RecordVoiceOver,
                 title = "Voice Interaction",
                 description = "Natural speech recognition and synthesis in multiple languages"
             )
             
             FeatureItem(
-                icon = androidx.compose.material.icons.Icons.Default.Visibility,
+                icon = Icons.Default.Visibility,
                 title = "Vision Understanding",
                 description = "Object detection, OCR, and scene analysis from your camera"
             )
             
             FeatureItem(
-                icon = androidx.compose.material.icons.Icons.Default.Folder,
+                icon = Icons.Default.Folder,
                 title = "Local Memory",
                 description = "Semantic memory and document knowledge stored privately"
             )
             
             FeatureItem(
-                icon = androidx.compose.material.icons.Icons.Default.Security,
+                icon = Icons.Default.Security,
                 title = "Privacy First",
                 description = "All processing happens on-device with no cloud dependency"
             )
             
             FeatureItem(
-                icon = androidx.compose.material.icons.Icons.Default.Tune,
+                icon = Icons.Default.Tune,
                 title = "Hardware Aware",
                 description = "Optimized for both 6GB and 16GB RAM devices"
             )

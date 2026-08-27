@@ -1,5 +1,6 @@
 package com.livehumanai.ui.screens.home
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -19,6 +20,7 @@ enum class AIState {
     IDLE, LISTENING, PROCESSING, THINKING, SPEAKING, VISION, TOOL_EXECUTION, MEMORY, PAUSED, ERROR
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     onNavigateToChat: () -> Unit,
@@ -193,7 +195,7 @@ fun HomeScreen(
                             modifier = Modifier
                                 .size(8.dp)
                                 .clip(CircleShape)
-                                .brush(Brush.radialGradient(listOf(ai_idle, Color.Transparent)))
+                                .background(Brush.radialGradient(listOf(ai_idle, Color.Transparent)))
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
@@ -234,7 +236,7 @@ private fun AICoreIndicator(state: AIState) {
             modifier = Modifier
                 .size(100.dp)
                 .clip(CircleShape)
-                .brush(Brush.radialGradient(listOf(orbColor.copy(alpha = 0.3f), Color.Transparent)))
+                .background(Brush.radialGradient(listOf(orbColor.copy(alpha = 0.3f), Color.Transparent)))
         )
         
         // Inner orb
@@ -242,7 +244,7 @@ private fun AICoreIndicator(state: AIState) {
             modifier = Modifier
                 .size(60.dp)
                 .clip(CircleShape)
-                .brush(Brush.radialGradient(listOf(orbColor, orbColor.copy(alpha = 0.5f))))
+                .background(Brush.radialGradient(listOf(orbColor, orbColor.copy(alpha = 0.5f))))
         )
     }
 }

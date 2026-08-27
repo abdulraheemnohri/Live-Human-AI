@@ -31,6 +31,8 @@ val LightTextSecondary = Color(0xFF49454F)
 val LightDivider = Color(0xFFE0DFE3)
 val LightOutline = Color(0xFF79747E)
 
+val ai_idle = Color(0xFF00E096)
+
 // AI State Colors - Light
 val LightAIActive = Color(0xFF00C9A7)
 val LightAIThinking = Color(0xFF6B4E8F)

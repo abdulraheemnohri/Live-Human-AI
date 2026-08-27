@@ -3,6 +3,9 @@ package com.livehumanai.ui.tasks
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -73,7 +76,7 @@ fun TasksScreen(
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
-                            androidx.compose.material.icons.Icons.Default.ArrowBack,
+                            Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back"
                         )
                     }
@@ -81,7 +84,7 @@ fun TasksScreen(
                 actions = {
                     IconButton(onClick = { /* Clear completed tasks */ }) {
                         Icon(
-                            androidx.compose.material.icons.Icons.Default.Delete,
+                            Icons.Default.Delete,
                             contentDescription = "Clear Completed"
                         )
                     }

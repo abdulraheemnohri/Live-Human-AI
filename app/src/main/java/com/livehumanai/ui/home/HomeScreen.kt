@@ -5,6 +5,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -99,7 +102,7 @@ fun HomeScreen(
         ) {
             // Voice button
             ActionButton(
-                icon = androidx.compose.material.icons.Icons.Filled.Mic,
+                icon = Icons.Filled.Mic,
                 label = "Voice",
                 onClick = onVoiceClick,
                 modifier = Modifier.weight(1f)
@@ -140,7 +143,7 @@ fun HomeScreen(
             
             // Camera button
             ActionButton(
-                icon = androidx.compose.material.icons.Icons.Filled.CameraAlt,
+                icon = Icons.Filled.CameraAlt,
                 label = "Camera",
                 onClick = onCameraClick,
                 modifier = Modifier.weight(1f)

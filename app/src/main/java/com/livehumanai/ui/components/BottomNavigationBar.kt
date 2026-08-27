@@ -1,12 +1,15 @@
 package com.livehumanai.ui.components
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.livehumanai.ui.navigation.BottomNavItem
 import com.livehumanai.ui.navigation.Screen
+import com.livehumanai.ui.navigation.bottomNavItems
 
 @Composable
 fun LiveHumanAIBottomBar(
@@ -19,13 +22,13 @@ fun LiveHumanAIBottomBar(
         containerColor = MaterialTheme.colorScheme.surface,
         tonalElevation = 8.dp
     ) {
-        bottomNavItems.forEach { item ->
+        for (item in bottomNavItems) {
             val selected = currentRoute == item.screen.route
             
             NavigationBarItem(
                 icon = {
                     Icon(
-                        imageVector = androidx.compose.material.icons.Icons.Filled.Home,
+                        imageVector = Icons.Filled.Home,
                         contentDescription = item.contentDescription
                     )
                 },
@@ -62,7 +65,7 @@ fun BottomNavigationBar(
         containerColor = MaterialTheme.colorScheme.surface,
         tonalElevation = 8.dp
     ) {
-        bottomNavItems.forEach { item ->
+        for (item in bottomNavItems) {
             val selected = currentRoute == item.screen.route
             
             NavigationBarItem(
@@ -70,12 +73,12 @@ fun BottomNavigationBar(
                     // Using placeholder icons - will be replaced with actual icon resources
                     Icon(
                         imageVector = when (item.screen) {
-                            Screen.Home -> androidx.compose.material.icons.Icons.Filled.Home
-                            Screen.Chat -> androidx.compose.material.icons.Icons.Filled.Message
-                            Screen.Vision -> androidx.compose.material.icons.Icons.Filled.Visibility
-                            Screen.Memory -> androidx.compose.material.icons.Icons.Filled.Folder
-                            Screen.More -> androidx.compose.material.icons.Icons.Filled.MoreHoriz
-                            else -> androidx.compose.material.icons.Icons.Filled.Home
+                            Screen.Home -> Icons.Filled.Home
+                            Screen.Chat -> Icons.Filled.Message
+                            Screen.Vision -> Icons.Filled.Visibility
+                            Screen.Memory -> Icons.Filled.Folder
+                            Screen.More -> Icons.Filled.MoreHoriz
+                            else -> Icons.Filled.Home
                         },
                         contentDescription = item.contentDescription
                     )

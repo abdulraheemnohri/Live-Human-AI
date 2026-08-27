@@ -8,19 +8,17 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.navArgument
-import com.livehumanai.ui.chat.ChatScreen
-import com.livehumanai.ui.home.HomeScreen
-import com.livehumanai.ui.memory.MemoryScreen
-import com.livehumanai.ui.vision.VisionScreen
-import com.livehumanai.ui.models.ModelsScreen
-import com.livehumanai.ui.downloads.DownloadsScreen
-import com.livehumanai.ui.performance.PerformanceScreen
+import com.livehumanai.ui.screens.chat.ChatScreen
+import com.livehumanai.ui.screens.home.HomeScreen
+import com.livehumanai.ui.screens.memory.MemoryScreen
+import com.livehumanai.ui.screens.vision.VisionScreen
+import com.livehumanai.ui.screens.models.ModelsScreen
+import com.livehumanai.ui.screens.downloads.DownloadsScreen
+import com.livehumanai.ui.screens.settings.SettingsScreen
+import com.livehumanai.ui.screens.diagnostics.DiagnosticsScreen
 import com.livehumanai.ui.tasks.TasksScreen
 import com.livehumanai.ui.knowledge.KnowledgeScreen
-import com.livehumanai.ui.privacy.PrivacyScreen
 import com.livehumanai.ui.security.SecurityScreen
-import com.livehumanai.ui.settings.SettingsScreen
-import com.livehumanai.ui.diagnostics.DiagnosticsScreen
 import com.livehumanai.ui.developer.DeveloperScreen
 import com.livehumanai.ui.about.AboutScreen
 
@@ -42,13 +40,11 @@ fun LiveHumanAINavGraph(
         // Main tab screens
         composable(Screen.Home.route) {
             HomeScreen(
-                onChatClick = { navController.navigate(Screen.Chat.route) },
-                onVoiceClick = { /* Handle voice input */ },
-                onCameraClick = { navController.navigate(Screen.Vision.route) },
-                onSearchQuery = { query -> 
-                    // Navigate to chat with pre-filled query
-                    navController.navigate(Screen.Chat.route)
-                }
+                onNavigateToChat = { navController.navigate(Screen.Chat.route) },
+                onNavigateToVision = { navController.navigate(Screen.Vision.route) },
+                onNavigateToMemory = { navController.navigate(Screen.Memory.route) },
+                onNavigateToModels = { navController.navigate(Screen.Models.route) },
+                onNavigateToSettings = { navController.navigate(Screen.Settings.route) }
             )
         }
         
@@ -82,8 +78,8 @@ fun LiveHumanAINavGraph(
         composable(Screen.Models.route) {
             ModelsScreen(
                 onNavigateBack = { navController.popBackStack() },
-                onModelClick = { modelId ->
-                    navController.navigate(Screen.ModelDetail.createRoute(modelId))
+                onNavigateToDownloads = {
+                    navController.navigate(Screen.Downloads.route)
                 }
             )
         }
@@ -95,9 +91,7 @@ fun LiveHumanAINavGraph(
         }
         
         composable(Screen.Performance.route) {
-            PerformanceScreen(
-                onNavigateBack = { navController.popBackStack() }
-            )
+            // Placeholder for Performance
         }
         
         composable(Screen.Tasks.route) {
@@ -113,9 +107,7 @@ fun LiveHumanAINavGraph(
         }
         
         composable(Screen.Privacy.route) {
-            PrivacyScreen(
-                onNavigateBack = { navController.popBackStack() }
-            )
+            // Placeholder for Privacy
         }
         
         composable(Screen.Security.route) {
@@ -172,11 +164,7 @@ fun LiveHumanAINavGraph(
                 }
             )
         ) { backStackEntry ->
-            val modelId = backStackEntry.arguments?.getString("modelId") ?: ""
-            ModelDetailScreen(
-                modelId = modelId,
-                onNavigateBack = { navController.popBackStack() }
-            )
+            // Placeholder for ModelDetail
         }
     }
 }

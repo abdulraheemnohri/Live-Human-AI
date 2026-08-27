@@ -1,6 +1,13 @@
 package com.livehumanai.ui.navigation
 
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -67,10 +74,7 @@ fun AppNavGraph(
         
         composable(Screen.Settings.route) {
             SettingsScreen(
-                onNavigateBack = { navController.popBackStack() },
-                onNavigateToDiagnostics = { navController.navigate(Screen.Diagnostics.route) },
-                onNavigateToPrivacy = { navController.navigate(Screen.Privacy.route) },
-                onNavigateToPerformance = { navController.navigate(Screen.Performance.route) }
+                onNavigateBack = { navController.popBackStack() }
             )
         }
         
@@ -134,16 +138,17 @@ fun AppNavGraph(
 }
 
 // Placeholder screen functions - to be implemented in subsequent phases
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DeveloperScreenPlaceholder(onNavigateBack: () -> Unit) {
-    androidx.compose.material3.Scaffold(
+    Scaffold(
         topBar = {
-            androidx.compose.material3.TopAppBar(
-                title = { androidx.compose.material3.Text("Developer") },
+            TopAppBar(
+                title = { Text("Developer") },
                 navigationIcon = {
-                    androidx.compose.material3.IconButton(onClick = onNavigateBack) {
-                        androidx.compose.material3.Icon(
-                            androidx.compose.material.icons.Icons.Default.ArrowBack,
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back"
                         )
                     }
@@ -151,29 +156,30 @@ private fun DeveloperScreenPlaceholder(onNavigateBack: () -> Unit) {
             )
         }
     ) { paddingValues ->
-        androidx.compose.material3.Surface(modifier = androidx.compose.ui.Modifier.padding(paddingValues)) {
-            androidx.compose.foundation.layout.Box(
-                modifier = androidx.compose.ui.Modifier
+        Surface(modifier = Modifier.padding(paddingValues)) {
+            Box(
+                modifier = Modifier
                     .fillMaxSize()
                     .padding(16.dp),
-                contentAlignment = androidx.compose.ui.Alignment.Center
+                contentAlignment = Alignment.Center
             ) {
-                androidx.compose.material3.Text("Developer Screen - Coming Soon")
+                Text("Developer Screen - Coming Soon")
             }
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PrivacyScreenPlaceholder(onNavigateBack: () -> Unit) {
-    androidx.compose.material3.Scaffold(
+    Scaffold(
         topBar = {
-            androidx.compose.material3.TopAppBar(
-                title = { androidx.compose.material3.Text("Privacy") },
+            TopAppBar(
+                title = { Text("Privacy") },
                 navigationIcon = {
-                    androidx.compose.material3.IconButton(onClick = onNavigateBack) {
-                        androidx.compose.material3.Icon(
-                            androidx.compose.material.icons.Icons.Default.ArrowBack,
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back"
                         )
                     }
@@ -181,29 +187,30 @@ private fun PrivacyScreenPlaceholder(onNavigateBack: () -> Unit) {
             )
         }
     ) { paddingValues ->
-        androidx.compose.material3.Surface(modifier = androidx.compose.ui.Modifier.padding(paddingValues)) {
-            androidx.compose.foundation.layout.Box(
-                modifier = androidx.compose.ui.Modifier
+        Surface(modifier = Modifier.padding(paddingValues)) {
+            Box(
+                modifier = Modifier
                     .fillMaxSize()
                     .padding(16.dp),
-                contentAlignment = androidx.compose.ui.Alignment.Center
+                contentAlignment = Alignment.Center
             ) {
-                androidx.compose.material3.Text("Privacy Center - Coming Soon")
+                Text("Privacy Center - Coming Soon")
             }
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PerformanceScreenPlaceholder(onNavigateBack: () -> Unit) {
-    androidx.compose.material3.Scaffold(
+    Scaffold(
         topBar = {
-            androidx.compose.material3.TopAppBar(
-                title = { androidx.compose.material3.Text("Performance") },
+            TopAppBar(
+                title = { Text("Performance") },
                 navigationIcon = {
-                    androidx.compose.material3.IconButton(onClick = onNavigateBack) {
-                        androidx.compose.material3.Icon(
-                            androidx.compose.material.icons.Icons.Default.ArrowBack,
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back"
                         )
                     }
@@ -211,29 +218,30 @@ private fun PerformanceScreenPlaceholder(onNavigateBack: () -> Unit) {
             )
         }
     ) { paddingValues ->
-        androidx.compose.material3.Surface(modifier = androidx.compose.ui.Modifier.padding(paddingValues)) {
-            androidx.compose.foundation.layout.Box(
-                modifier = androidx.compose.ui.Modifier
+        Surface(modifier = Modifier.padding(paddingValues)) {
+            Box(
+                modifier = Modifier
                     .fillMaxSize()
                     .padding(16.dp),
-                contentAlignment = androidx.compose.ui.Alignment.Center
+                contentAlignment = Alignment.Center
             ) {
-                androidx.compose.material3.Text("Performance Dashboard - Coming Soon")
+                Text("Performance Dashboard - Coming Soon")
             }
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TasksScreenPlaceholder(onNavigateBack: () -> Unit) {
-    androidx.compose.material3.Scaffold(
+    Scaffold(
         topBar = {
-            androidx.compose.material3.TopAppBar(
-                title = { androidx.compose.material3.Text("Tasks") },
+            TopAppBar(
+                title = { Text("Tasks") },
                 navigationIcon = {
-                    androidx.compose.material3.IconButton(onClick = onNavigateBack) {
-                        androidx.compose.material3.Icon(
-                            androidx.compose.material.icons.Icons.Default.ArrowBack,
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back"
                         )
                     }
@@ -241,29 +249,30 @@ private fun TasksScreenPlaceholder(onNavigateBack: () -> Unit) {
             )
         }
     ) { paddingValues ->
-        androidx.compose.material3.Surface(modifier = androidx.compose.ui.Modifier.padding(paddingValues)) {
-            androidx.compose.foundation.layout.Box(
-                modifier = androidx.compose.ui.Modifier
+        Surface(modifier = Modifier.padding(paddingValues)) {
+            Box(
+                modifier = Modifier
                     .fillMaxSize()
                     .padding(16.dp),
-                contentAlignment = androidx.compose.ui.Alignment.Center
+                contentAlignment = Alignment.Center
             ) {
-                androidx.compose.material3.Text("Task Manager - Coming Soon")
+                Text("Task Manager - Coming Soon")
             }
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun KnowledgeScreenPlaceholder(onNavigateBack: () -> Unit) {
-    androidx.compose.material3.Scaffold(
+    Scaffold(
         topBar = {
-            androidx.compose.material3.TopAppBar(
-                title = { androidx.compose.material3.Text("Knowledge") },
+            TopAppBar(
+                title = { Text("Knowledge") },
                 navigationIcon = {
-                    androidx.compose.material3.IconButton(onClick = onNavigateBack) {
-                        androidx.compose.material3.Icon(
-                            androidx.compose.material.icons.Icons.Default.ArrowBack,
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back"
                         )
                     }
@@ -271,29 +280,30 @@ private fun KnowledgeScreenPlaceholder(onNavigateBack: () -> Unit) {
             )
         }
     ) { paddingValues ->
-        androidx.compose.material3.Surface(modifier = androidx.compose.ui.Modifier.padding(paddingValues)) {
-            androidx.compose.foundation.layout.Box(
-                modifier = androidx.compose.ui.Modifier
+        Surface(modifier = Modifier.padding(paddingValues)) {
+            Box(
+                modifier = Modifier
                     .fillMaxSize()
                     .padding(16.dp),
-                contentAlignment = androidx.compose.ui.Alignment.Center
+                contentAlignment = Alignment.Center
             ) {
-                androidx.compose.material3.Text("Knowledge Base - Coming Soon")
+                Text("Knowledge Base - Coming Soon")
             }
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SecurityScreenPlaceholder(onNavigateBack: () -> Unit) {
-    androidx.compose.material3.Scaffold(
+    Scaffold(
         topBar = {
-            androidx.compose.material3.TopAppBar(
-                title = { androidx.compose.material3.Text("Security") },
+            TopAppBar(
+                title = { Text("Security") },
                 navigationIcon = {
-                    androidx.compose.material3.IconButton(onClick = onNavigateBack) {
-                        androidx.compose.material3.Icon(
-                            androidx.compose.material.icons.Icons.Default.ArrowBack,
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back"
                         )
                     }
@@ -301,29 +311,30 @@ private fun SecurityScreenPlaceholder(onNavigateBack: () -> Unit) {
             )
         }
     ) { paddingValues ->
-        androidx.compose.material3.Surface(modifier = androidx.compose.ui.Modifier.padding(paddingValues)) {
-            androidx.compose.foundation.layout.Box(
-                modifier = androidx.compose.ui.Modifier
+        Surface(modifier = Modifier.padding(paddingValues)) {
+            Box(
+                modifier = Modifier
                     .fillMaxSize()
                     .padding(16.dp),
-                contentAlignment = androidx.compose.ui.Alignment.Center
+                contentAlignment = Alignment.Center
             ) {
-                androidx.compose.material3.Text("Security Settings - Coming Soon")
+                Text("Security Settings - Coming Soon")
             }
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AboutScreenPlaceholder(onNavigateBack: () -> Unit) {
-    androidx.compose.material3.Scaffold(
+    Scaffold(
         topBar = {
-            androidx.compose.material3.TopAppBar(
-                title = { androidx.compose.material3.Text("About") },
+            TopAppBar(
+                title = { Text("About") },
                 navigationIcon = {
-                    androidx.compose.material3.IconButton(onClick = onNavigateBack) {
-                        androidx.compose.material3.Icon(
-                            androidx.compose.material.icons.Icons.Default.ArrowBack,
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back"
                         )
                     }
@@ -331,29 +342,30 @@ private fun AboutScreenPlaceholder(onNavigateBack: () -> Unit) {
             )
         }
     ) { paddingValues ->
-        androidx.compose.material3.Surface(modifier = androidx.compose.ui.Modifier.padding(paddingValues)) {
-            androidx.compose.foundation.layout.Box(
-                modifier = androidx.compose.ui.Modifier
+        Surface(modifier = Modifier.padding(paddingValues)) {
+            Box(
+                modifier = Modifier
                     .fillMaxSize()
                     .padding(16.dp),
-                contentAlignment = androidx.compose.ui.Alignment.Center
+                contentAlignment = Alignment.Center
             ) {
-                androidx.compose.material3.Text("About Live Human AI - Coming Soon")
+                Text("About Live Human AI - Coming Soon")
             }
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ModelDetailScreenPlaceholder(modelId: String, onNavigateBack: () -> Unit) {
-    androidx.compose.material3.Scaffold(
+    Scaffold(
         topBar = {
-            androidx.compose.material3.TopAppBar(
-                title = { androidx.compose.material3.Text("Model Details") },
+            TopAppBar(
+                title = { Text("Model Details") },
                 navigationIcon = {
-                    androidx.compose.material3.IconButton(onClick = onNavigateBack) {
-                        androidx.compose.material3.Icon(
-                            androidx.compose.material.icons.Icons.Default.ArrowBack,
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back"
                         )
                     }
@@ -361,14 +373,14 @@ private fun ModelDetailScreenPlaceholder(modelId: String, onNavigateBack: () -> 
             )
         }
     ) { paddingValues ->
-        androidx.compose.material3.Surface(modifier = androidx.compose.ui.Modifier.padding(paddingValues)) {
-            androidx.compose.foundation.layout.Box(
-                modifier = androidx.compose.ui.Modifier
+        Surface(modifier = Modifier.padding(paddingValues)) {
+            Box(
+                modifier = Modifier
                     .fillMaxSize()
                     .padding(16.dp),
-                contentAlignment = androidx.compose.ui.Alignment.Center
+                contentAlignment = Alignment.Center
             ) {
-                androidx.compose.material3.Text("Model Detail: $modelId - Coming Soon")
+                Text("Model Detail: $modelId - Coming Soon")
             }
         }
     }

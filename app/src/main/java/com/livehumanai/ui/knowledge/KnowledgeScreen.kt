@@ -3,6 +3,9 @@ package com.livehumanai.ui.knowledge
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -74,7 +77,7 @@ fun KnowledgeScreen(
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
-                            androidx.compose.material.icons.Icons.Default.ArrowBack,
+                            Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back"
                         )
                     }
@@ -82,7 +85,7 @@ fun KnowledgeScreen(
                 actions = {
                     IconButton(onClick = { /* Import document */ }) {
                         Icon(
-                            androidx.compose.material.icons.Icons.Default.Add,
+                            Icons.Default.Add,
                             contentDescription = "Add Document"
                         )
                     }
@@ -103,7 +106,7 @@ fun KnowledgeScreen(
                 placeholder = { Text("Search documents...") },
                 leadingIcon = {
                     Icon(
-                        androidx.compose.material.icons.Icons.Default.Search,
+                        Icons.Default.Search,
                         contentDescription = null
                     )
                 },
@@ -111,7 +114,7 @@ fun KnowledgeScreen(
                     if (searchQuery.isNotEmpty()) {
                         IconButton(onClick = { searchQuery = "" }) {
                             Icon(
-                                androidx.compose.material.icons.Icons.Default.Close,
+                                Icons.Default.Close,
                                 contentDescription = "Clear"
                             )
                         }
@@ -211,9 +214,9 @@ private fun DocumentItem(document: Document) {
             ) {
                 Icon(
                     imageVector = when (document.category) {
-                        "Preferences" -> androidx.compose.material.icons.Icons.Default.Star
-                        "Notes" -> androidx.compose.material.icons.Icons.Default.Edit
-                        else -> androidx.compose.material.icons.Icons.Default.Description
+                        "Preferences" -> Icons.Default.Star
+                        "Notes" -> Icons.Default.Edit
+                        else -> Icons.Default.Description
                     },
                     contentDescription = null,
                     modifier = Modifier.size(32.dp),
@@ -283,7 +286,7 @@ private fun DocumentItem(document: Document) {
 private fun PopupMenuButton(onClick: () -> Unit) {
     IconButton(onClick = onClick) {
         Icon(
-            androidx.compose.material.icons.Icons.Default.MoreVert,
+            Icons.Default.MoreVert,
             contentDescription = "More options"
         )
     }
@@ -323,7 +326,7 @@ private fun EmptyKnowledgeView(hasFilter: Boolean) {
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(onClick = { /* Import document */ }) {
                     Icon(
-                        androidx.compose.material.icons.Icons.Default.Add,
+                        Icons.Default.Add,
                         contentDescription = null,
                         modifier = Modifier.size(18.dp)
                     )

@@ -12,6 +12,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
 import com.livehumanai.ui.theme.*
 
@@ -62,7 +64,7 @@ fun AIOrb(
     modifier: Modifier = Modifier,
     size: Float = 80f
 ) {
-    val isDark = MaterialTheme.colorScheme.brightness < 0.5f
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
     val infiniteTransition = rememberInfiniteTransition(label = "orb_animation")
     
     val scale by infiniteTransition.animateFloat(
@@ -146,17 +148,8 @@ fun AIOrb(
         
         // Inner pulse for active states
         if (state == AIState.LISTENING || state == AIState.SPEAKING) {
-            val pulseAlpha by infiniteTransition.animateFloat(
-                initialValue = 0.2f,
-                targetValue = 0.6f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(300, easing = FastOutSlowInEasing),
-                    repeatMode = RepeatMode.Reverse
-                ),
-                label = "pulse"
-            )
             drawCircle(
-                color = color.copy(alpha = pulseAlpha),
+                color = color.copy(alpha = 0.4f),
                 radius = outerRadius * 0.3f,
                 center = center
             )
@@ -169,7 +162,7 @@ fun AIStateIndicator(
     state: AIState,
     modifier: Modifier = Modifier
 ) {
-    val isDark = MaterialTheme.colorScheme.brightness < 0.5f
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
     val color = state.getColor(isDark)
     
     Row(

@@ -4,10 +4,14 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -45,7 +49,7 @@ fun VoiceScreen(
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
-                            androidx.compose.material.icons.Icons.Default.ArrowBack,
+                            Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back"
                         )
                     }
@@ -120,7 +124,7 @@ fun VoiceScreen(
                     modifier = Modifier.size(56.dp)
                 ) {
                     Icon(
-                        androidx.compose.material.icons.Icons.Default.Settings,
+                        Icons.Default.Settings,
                         contentDescription = "Settings",
                         modifier = Modifier.size(24.dp)
                     )
@@ -133,21 +137,21 @@ fun VoiceScreen(
                 ) {
                     if (isListening || isSpeaking) {
                         // Pulsing animation when active
-                        repeat(3) { index ->
-                            Canvas(
-                                modifier = Modifier
-                                    .size(72.dp + (index * 16).dp)
-                                    .align(Alignment.Center)
-                            ) {
+                        val primaryColor = MaterialTheme.colorScheme.primary
+                        Canvas(
+                            modifier = Modifier
+                                .size(120.dp)
+                                .align(Alignment.Center)
+                        ) {
+                            for (index in 0 until 3) {
                                 drawCircle(
                                     brush = Brush.radialGradient(
                                         colors = listOf(
-                                            MaterialTheme.colorScheme.primary.copy(alpha = 0.3f - (index * 0.1f)),
+                                            primaryColor.copy(alpha = (0.3f - index * 0.1f).coerceAtLeast(0f)),
                                             Color.Transparent
                                         )
                                     ),
-                                    radius = size.minDimension / 2,
-                                    alpha = 1f - (index * 0.3f)
+                                    radius = size.minDimension / 2 * (1f - index * 0.2f)
                                 )
                             }
                         }
@@ -176,9 +180,9 @@ fun VoiceScreen(
                     ) {
                         Icon(
                             imageVector = when {
-                                isListening -> androidx.compose.material.icons.Icons.Default.Close
-                                isSpeaking -> androidx.compose.material.icons.Icons.Default.VolumeOff
-                                else -> androidx.compose.material.icons.Icons.Default.Mic
+                                isListening -> Icons.Default.Close
+                                isSpeaking -> Icons.Default.VolumeOff
+                                else -> Icons.Default.Mic
                             },
                             contentDescription = if (isListening) "Stop listening" else "Start listening",
                             modifier = Modifier.size(32.dp),
@@ -193,7 +197,7 @@ fun VoiceScreen(
                     modifier = Modifier.size(56.dp)
                 ) {
                     Icon(
-                        androidx.compose.material.icons.Icons.Default.History,
+                        Icons.Default.History,
                         contentDescription = "History",
                         modifier = Modifier.size(24.dp)
                     )
@@ -245,22 +249,23 @@ private fun VoiceStateIndicator(
         )
     )
     
+    val secondaryColor = MaterialTheme.colorScheme.secondary
     Box(
         modifier = Modifier.size(200.dp),
         contentAlignment = Alignment.Center
     ) {
         // Outer rings when listening
         if (isListening) {
-            repeat(3) { index ->
-                Canvas(
-                    modifier = Modifier
-                        .size(200.dp)
-                        .scale(scale)
-                ) {
+            Canvas(
+                modifier = Modifier
+                    .size(200.dp)
+                    .scale(scale)
+            ) {
+                for (index in 0 until 3) {
                     drawCircle(
                         brush = Brush.radialGradient(
                             colors = listOf(
-                                MaterialTheme.colorScheme.secondary.copy(alpha = 0.2f),
+                                secondaryColor.copy(alpha = 0.2f),
                                 Color.Transparent
                             )
                         ),
@@ -272,6 +277,9 @@ private fun VoiceStateIndicator(
         }
         
         // Audio waveform visualization
+        val circleSecondaryColor = MaterialTheme.colorScheme.secondary
+        val circlePrimaryColor = MaterialTheme.colorScheme.primary
+        val circleOutlineColor = MaterialTheme.colorScheme.outline
         Canvas(
             modifier = Modifier.size(160.dp)
         ) {
@@ -296,9 +304,9 @@ private fun VoiceStateIndicator(
                 
                 drawCircle(
                     color = when {
-                        isListening -> MaterialTheme.colorScheme.secondary
-                        isSpeaking -> MaterialTheme.colorScheme.primary
-                        else -> MaterialTheme.colorScheme.outline
+                        isListening -> circleSecondaryColor
+                        isSpeaking -> circlePrimaryColor
+                        else -> circleOutlineColor
                     },
                     radius = 8.dp.toPx(),
                     center = Offset(x, y),
@@ -320,9 +328,9 @@ private fun VoiceStateIndicator(
             Box(contentAlignment = Alignment.Center) {
                 Icon(
                     imageVector = when {
-                        isListening -> androidx.compose.material.icons.Icons.Default.Mic
-                        isSpeaking -> androidx.compose.material.icons.Icons.Default.VolumeUp
-                        else -> androidx.compose.material.icons.Icons.Default.MicNone
+                        isListening -> Icons.Default.Mic
+                        isSpeaking -> Icons.Default.VolumeUp
+                        else -> Icons.Default.MicNone
                     },
                     contentDescription = null,
                     modifier = Modifier.size(40.dp),
