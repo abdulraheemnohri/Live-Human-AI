@@ -6,7 +6,12 @@ target/
 
 # Build artifacts
 build/
+**/build/
 dist/
+.cxx/
+**/.cxx/
+.externalNativeBuild/
+**/.externalNativeBuild/
 
 # Python
 __pycache__/
