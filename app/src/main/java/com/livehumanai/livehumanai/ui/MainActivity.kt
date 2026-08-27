@@ -27,7 +27,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    com.livehumanai.livehumanai.ui.navigation.NavGraph()
+                    com.livehumanai.livehumanai.ui.navigation.Navigation()
                 }
             }
         }
