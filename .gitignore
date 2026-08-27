@@ -1,3 +1,4 @@
+```
 # Dependencies
 node_modules/
 .gradle/
@@ -6,9 +7,17 @@ target/
 # Build artifacts
 build/
 dist/
-**/build/
-**/.cxx/
-.cxx/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+.env
+.env.local
+.env.*
 
 # Java/Kotlin
 *.class
@@ -56,3 +65,4 @@ htmlcov/
 *.Z
 *.lz
 *.lzo
+```
