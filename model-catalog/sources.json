@@ -1,0 +1,18 @@
+{
+  "version": "1.0.0",
+  "sources": [
+    {
+      "id": "huggingface",
+      "name": "Hugging Face Hub",
+      "baseUrl": "https://huggingface.co",
+      "trusted": true,
+      "repositories": [
+        "Qwen/Qwen3-0.6B-GGUF",
+        "Qwen/Qwen3-1.7B-GGUF",
+        "Qwen/Qwen3-4B-GGUF",
+        "ggerganov/whisper.cpp",
+        "onnx/yolov8n-coco"
+      ]
+    }
+  ]
+}

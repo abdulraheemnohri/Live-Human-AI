@@ -1,0 +1,44 @@
+{
+  "version": "1.0.0",
+  "profiles": {
+    "lite": {
+      "name": "6 GB RAM - Lite Profile",
+      "targetRamGb": 6,
+      "maxRamGb": 6,
+      "recommendedLlms": ["qwen3-0.6b-q4", "qwen3-1.7b-q4"],
+      "recommendedStt": "whisper-tiny",
+      "recommendedTts": "android-tts-lite",
+      "recommendedVision": "yolov8n-coco",
+      "defaultContextLength": 2048,
+      "maxResidentModels": 1,
+      "visionFpsTarget": 5,
+      "semanticMemoryEnabled": false
+    },
+    "standard": {
+      "name": "8-12 GB RAM - Standard Profile",
+      "targetRamGb": 8,
+      "maxRamGb": 12,
+      "recommendedLlms": ["qwen3-1.7b-q4", "qwen3-4b-q4"],
+      "recommendedStt": "whisper-base",
+      "recommendedTts": "android-tts-standard",
+      "recommendedVision": "yolov8n-coco",
+      "defaultContextLength": 4096,
+      "maxResidentModels": 2,
+      "visionFpsTarget": 10,
+      "semanticMemoryEnabled": true
+    },
+    "pro": {
+      "name": "16 GB+ RAM - Pro Profile",
+      "targetRamGb": 16,
+      "maxRamGb": 64,
+      "recommendedLlms": ["qwen3-4b-q4", "qwen3-7b-q4"],
+      "recommendedStt": "whisper-small",
+      "recommendedTts": "android-tts-pro",
+      "recommendedVision": "yolov8m-coco",
+      "defaultContextLength": 8192,
+      "maxResidentModels": 4,
+      "visionFpsTarget": 15,
+      "semanticMemoryEnabled": true
+    }
+  }
+}

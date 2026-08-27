@@ -40,8 +40,14 @@ class SettingsViewModel @Inject constructor(
             try {
                 val settingsMap = mutableMapOf<String, Any>()
 
-                // AI Settings
+                // AI & Model Settings
                 settingsMap["defaultModel"] = settingsRepository.getDefaultModel()
+                settingsMap["autoModelSelection"] = settingsRepository.isAutoModelSelectionEnabled()
+                settingsMap["maxRamBudgetGb"] = settingsRepository.getMaxRamBudgetGb()
+                settingsMap["contextSize"] = settingsRepository.getContextSize()
+                settingsMap["threadCount"] = settingsRepository.getThreadCount()
+                settingsMap["vulkanEnabled"] = settingsRepository.isVulkanEnabled()
+                settingsMap["gpuBackend"] = settingsRepository.getGpuBackend()
                 settingsMap["performanceMode"] = settingsRepository.getPerformanceMode()
                 settingsMap["temperature"] = settingsRepository.getTemperature()
                 settingsMap["topP"] = settingsRepository.getTopP()
@@ -87,15 +93,21 @@ class SettingsViewModel @Inject constructor(
             try {
                 settings.forEach { (key, value) ->
                     when (key) {
-                        // AI Settings
+                        // AI & Model Settings
                         "defaultModel" -> settingsRepository.setDefaultModel(value as String)
+                        "autoModelSelection" -> settingsRepository.setAutoModelSelectionEnabled(value as Boolean)
+                        "maxRamBudgetGb" -> settingsRepository.setMaxRamBudgetGb((value as Number).toInt())
+                        "contextSize" -> settingsRepository.setContextSize((value as Number).toInt())
+                        "threadCount" -> settingsRepository.setThreadCount((value as Number).toInt())
+                        "vulkanEnabled" -> settingsRepository.setVulkanEnabled(value as Boolean)
+                        "gpuBackend" -> settingsRepository.setGpuBackend(value as String)
                         "performanceMode" -> {
                             settingsRepository.setPerformanceMode(value as String)
                             updateNativePerformanceMode(value as String)
                         }
-                        "temperature" -> settingsRepository.setTemperature(value as Float)
-                        "topP" -> settingsRepository.setTopP(value as Float)
-                        "maxTokens" -> settingsRepository.setMaxTokens(value as Int)
+                        "temperature" -> settingsRepository.setTemperature((value as Number).toFloat())
+                        "topP" -> settingsRepository.setTopP((value as Number).toFloat())
+                        "maxTokens" -> settingsRepository.setMaxTokens((value as Number).toInt())
 
                         // Voice Settings
                         "wakeWordEnabled" -> settingsRepository.setWakeWordEnabled(value as Boolean)
