@@ -77,13 +77,61 @@ class SettingsRepository @Inject constructor(
 
     // Specific setting getters and setters
 
-    // AI Settings
+    // AI & Model Settings
     suspend fun getDefaultModel(): String {
         return getStringSetting(SettingsEntity.DEFAULT_MODEL, "qwen3-1.7b-q4")
     }
 
     suspend fun setDefaultModel(modelName: String) {
         setStringSetting(SettingsEntity.DEFAULT_MODEL, modelName)
+    }
+
+    suspend fun isAutoModelSelectionEnabled(): Boolean {
+        return getBooleanSetting("auto_model_selection", true)
+    }
+
+    suspend fun setAutoModelSelectionEnabled(enabled: Boolean) {
+        setBooleanSetting("auto_model_selection", enabled)
+    }
+
+    suspend fun getMaxRamBudgetGb(): Int {
+        return getIntegerSetting("max_ram_budget_gb", 6)
+    }
+
+    suspend fun setMaxRamBudgetGb(ramGb: Int) {
+        setIntegerSetting("max_ram_budget_gb", ramGb)
+    }
+
+    suspend fun getContextSize(): Int {
+        return getIntegerSetting("context_size", 2048)
+    }
+
+    suspend fun setContextSize(contextSize: Int) {
+        setIntegerSetting("context_size", contextSize)
+    }
+
+    suspend fun getThreadCount(): Int {
+        return getIntegerSetting("thread_count", 4)
+    }
+
+    suspend fun setThreadCount(threads: Int) {
+        setIntegerSetting("thread_count", threads)
+    }
+
+    suspend fun isVulkanEnabled(): Boolean {
+        return getBooleanSetting("vulkan_enabled", true)
+    }
+
+    suspend fun setVulkanEnabled(enabled: Boolean) {
+        setBooleanSetting("vulkan_enabled", enabled)
+    }
+
+    suspend fun getGpuBackend(): String {
+        return getStringSetting("gpu_backend", "Vulkan")
+    }
+
+    suspend fun setGpuBackend(backend: String) {
+        setStringSetting("gpu_backend", backend)
     }
 
     suspend fun getPerformanceMode(): String {

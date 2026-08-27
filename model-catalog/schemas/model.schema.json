@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Live Human AI Model Catalog Schema",
+  "type": "object",
+  "properties": {
+    "version": { "type": "string" },
+    "lastUpdated": { "type": "string" },
+    "models": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "repository", "type", "format", "sizeBytes", "runtime"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "repository": { "type": "string" },
+          "revision": { "type": "string" },
+          "type": { "type": "string", "enum": ["llm", "stt", "tts", "vision", "vad", "wakeword", "embeddings"] },
+          "format": { "type": "string" },
+          "quantization": { "type": "string" },
+          "sizeBytes": { "type": "number" },
+          "minimumRamGb": { "type": "number" },
+          "recommendedRamGb": { "type": "number" },
+          "runtime": { "type": "string" },
+          "verified": { "type": "boolean" }
+        }
+      }
+    }
+  },
+  "required": ["version", "models"]
+}
