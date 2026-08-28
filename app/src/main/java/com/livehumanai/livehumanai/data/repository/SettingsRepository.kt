@@ -324,6 +324,39 @@ class SettingsRepository @Inject constructor(
         setBooleanSetting(SettingsEntity.ANALYTICS_ENABLED, enabled)
     }
 
+    // Experimental Features
+    suspend fun isExperimentalLiveVisionEnabled(): Boolean {
+        return getBooleanSetting("exp_live_vision", false)
+    }
+
+    suspend fun setExperimentalLiveVisionEnabled(enabled: Boolean) {
+        setBooleanSetting("exp_live_vision", enabled)
+    }
+
+    suspend fun isExperimentalMultiModelResidencyEnabled(): Boolean {
+        return getBooleanSetting("exp_multi_model_residency", false)
+    }
+
+    suspend fun setExperimentalMultiModelResidencyEnabled(enabled: Boolean) {
+        setBooleanSetting("exp_multi_model_residency", enabled)
+    }
+
+    suspend fun isExperimentalSpeculativeDecodingEnabled(): Boolean {
+        return getBooleanSetting("exp_speculative_decoding", false)
+    }
+
+    suspend fun setExperimentalSpeculativeDecodingEnabled(enabled: Boolean) {
+        setBooleanSetting("exp_speculative_decoding", enabled)
+    }
+
+    suspend fun isExperimentalVulkanGpuEnabled(): Boolean {
+        return getBooleanSetting("exp_vulkan_gpu", false)
+    }
+
+    suspend fun setExperimentalVulkanGpuEnabled(enabled: Boolean) {
+        setBooleanSetting("exp_vulkan_gpu", enabled)
+    }
+
     // UI & Theme Settings
     suspend fun getThemeMode(): String {
         return getStringSetting("theme_mode", "Dark")
