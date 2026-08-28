@@ -158,12 +158,45 @@ class SettingsRepository @Inject constructor(
         setFloatSetting(SettingsEntity.TOP_P, topP)
     }
 
+    suspend fun getTopK(): Int {
+        return getIntegerSetting("top_k", 40)
+    }
+
+    suspend fun setTopK(topK: Int) {
+        setIntegerSetting("top_k", topK)
+    }
+
     suspend fun getMaxTokens(): Int {
         return getIntegerSetting(SettingsEntity.MAX_TOKENS, 512)
     }
 
     suspend fun setMaxTokens(maxTokens: Int) {
         setIntegerSetting(SettingsEntity.MAX_TOKENS, maxTokens)
+    }
+
+    // Jalebi Loop / Autonomy Settings
+    suspend fun getJalebiMaxIterations(): Int {
+        return getIntegerSetting("jalebi_max_iterations", 8)
+    }
+
+    suspend fun setJalebiMaxIterations(maxIterations: Int) {
+        setIntegerSetting("jalebi_max_iterations", maxIterations)
+    }
+
+    suspend fun getJalebiTokenBudget(): Int {
+        return getIntegerSetting("jalebi_token_budget", 4096)
+    }
+
+    suspend fun setJalebiTokenBudget(tokenBudget: Int) {
+        setIntegerSetting("jalebi_token_budget", tokenBudget)
+    }
+
+    suspend fun getJalebiConfidenceThreshold(): Float {
+        return getFloatSetting("jalebi_confidence_threshold", 0.85f)
+    }
+
+    suspend fun setJalebiConfidenceThreshold(threshold: Float) {
+        setFloatSetting("jalebi_confidence_threshold", threshold)
     }
 
     // Voice Settings
@@ -289,5 +322,30 @@ class SettingsRepository @Inject constructor(
 
     suspend fun setAnalyticsEnabled(enabled: Boolean) {
         setBooleanSetting(SettingsEntity.ANALYTICS_ENABLED, enabled)
+    }
+
+    // UI & Theme Settings
+    suspend fun getThemeMode(): String {
+        return getStringSetting("theme_mode", "Dark")
+    }
+
+    suspend fun setThemeMode(mode: String) {
+        setStringSetting("theme_mode", mode)
+    }
+
+    suspend fun isHighContrastEnabled(): Boolean {
+        return getBooleanSetting("high_contrast_enabled", false)
+    }
+
+    suspend fun setHighContrastEnabled(enabled: Boolean) {
+        setBooleanSetting("high_contrast_enabled", enabled)
+    }
+
+    suspend fun isReducedMotionEnabled(): Boolean {
+        return getBooleanSetting("reduced_motion_enabled", false)
+    }
+
+    suspend fun setReducedMotionEnabled(enabled: Boolean) {
+        setBooleanSetting("reduced_motion_enabled", enabled)
     }
 }

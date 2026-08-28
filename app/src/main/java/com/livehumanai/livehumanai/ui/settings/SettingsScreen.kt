@@ -8,18 +8,21 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -29,35 +32,59 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.livehumanai.livehumanai.ui.theme.LiveHumanAITheme
+import com.livehumanai.livehumanai.ui.viewmodel.SettingsViewModel
 
 /**
  * SettingsScreen provides configuration options for the Live Human AI app.
  */
 @Composable
 fun SettingsScreen(
-    onBack: () -> Unit = {}
+    onBack: () -> Unit = {},
+    viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
+    val settingsState by viewModel.settings.collectAsState()
 
-    // State for settings
-    var performanceMode by remember { mutableStateOf("Balanced") }
-    var enableWakeWord by remember { mutableStateOf(true) }
-    var enableMemory by remember { mutableStateOf(true) }
-    var enableCamera by remember { mutableStateOf(true) }
-    var enableMicrophone by remember { mutableStateOf(true) }
-    var enableNetwork by remember { mutableStateOf(false) }
-    var enableObjectDetection by remember { mutableStateOf(true) }
-    var enableOCR by remember { mutableStateOf(true) }
+    // Observe values from ViewModel
+    val performanceMode = (settingsState["performanceMode"] as? String) ?: "Balanced"
+    val enableWakeWord = (settingsState["wakeWordEnabled"] as? Boolean) ?: true
+    val enableMemory = (settingsState["memoryEnabled"] as? Boolean) ?: true
+    val enableCamera = (settingsState["cameraEnabled"] as? Boolean) ?: true
+    val enableMicrophone = (settingsState["microphoneEnabled"] as? Boolean) ?: true
+    val enableNetwork = (settingsState["networkEnabled"] as? Boolean) ?: false
+    val enableObjectDetection = (settingsState["objectDetectionEnabled"] as? Boolean) ?: true
+    val enableOCR = (settingsState["ocrEnabled"] as? Boolean) ?: true
 
-    var selectedModel by remember { mutableStateOf("Qwen3 1.7B Q4") }
+    val selectedModel = (settingsState["defaultModel"] as? String) ?: "qwen3-1.7b-q4"
     var showModelDialog by remember { mutableStateOf(false) }
     var showRetentionDialog by remember { mutableStateOf(false) }
-    var retentionPeriod by remember { mutableStateOf("Indefinite") }
+    val retentionPeriodDays = (settingsState["memoryRetentionDays"] as? Int) ?: 30
+
+    // Scroll state for settings screen
+    val scrollState = rememberScrollState()
+
+    // AI & Jalebi Loop state from ViewModel
+    val temperature = (settingsState["temperature"] as? Float) ?: 0.7f
+    val topP = (settingsState["topP"] as? Float) ?: 0.9f
+    val topK = ((settingsState["topK"] as? Number)?.toFloat()) ?: 40f
+    val jalebiMaxIterations = ((settingsState["jalebiMaxIterations"] as? Number)?.toFloat()) ?: 8f
+    val jalebiConfidenceThreshold = (settingsState["jalebiConfidenceThreshold"] as? Float) ?: 0.85f
+
+    // Voice & Vision state from ViewModel
+    val speechSpeed = (settingsState["speechSpeed"] as? Float) ?: 1.0f
+    val speechPitch = (settingsState["speechPitch"] as? Float) ?: 1.0f
+
+    // Theme & Accessibility state from ViewModel
+    val themeMode = (settingsState["themeMode"] as? String) ?: "Dark"
+    val enableHighContrast = (settingsState["highContrastEnabled"] as? Boolean) ?: false
+    val enableReducedMotion = (settingsState["reducedMotionEnabled"] as? Boolean) ?: false
 
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(scrollState)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
@@ -68,7 +95,7 @@ fun SettingsScreen(
         ) {
             IconButton(onClick = onBack) {
                 Icon(
-                    imageVector = Icons.Default.ArrowBack,
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Back"
                 )
             }
@@ -100,64 +127,21 @@ fun SettingsScreen(
                 Column(
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.selectable(
-                            selected = (performanceMode == "Battery Saver"),
-                            onClick = { performanceMode = "Battery Saver" },
-                            role = Role.RadioButton
-                        )
-                    ) {
-                        RadioButton(
-                            selected = (performanceMode == "Battery Saver"),
-                            onClick = null
-                        )
-                        Text("Battery Saver")
-                    }
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.selectable(
-                            selected = (performanceMode == "Balanced"),
-                            onClick = { performanceMode = "Balanced" },
-                            role = Role.RadioButton
-                        )
-                    ) {
-                        RadioButton(
-                            selected = (performanceMode == "Balanced"),
-                            onClick = null
-                        )
-                        Text("Balanced")
-                    }
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.selectable(
-                            selected = (performanceMode == "Performance"),
-                            onClick = { performanceMode = "Performance" },
-                            role = Role.RadioButton
-                        )
-                    ) {
-                        RadioButton(
-                            selected = (performanceMode == "Performance"),
-                            onClick = null
-                        )
-                        Text("Performance")
-                    }
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.selectable(
-                            selected = (performanceMode == "Maximum"),
-                            onClick = { performanceMode = "Maximum" },
-                            role = Role.RadioButton
-                        )
-                    ) {
-                        RadioButton(
-                            selected = (performanceMode == "Maximum"),
-                            onClick = null
-                        )
-                        Text("Maximum")
+                    listOf("Battery Saver", "Balanced", "Performance", "Maximum").forEach { mode ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.selectable(
+                                selected = (performanceMode == mode),
+                                onClick = { viewModel.saveSetting("performanceMode", mode) },
+                                role = Role.RadioButton
+                            )
+                        ) {
+                            RadioButton(
+                                selected = (performanceMode == mode),
+                                onClick = null
+                            )
+                            Text(mode)
+                        }
                     }
                 }
             }
@@ -170,6 +154,81 @@ fun SettingsScreen(
                 Button(onClick = { showModelDialog = true }) {
                     Text("Select Model")
                 }
+            }
+
+            // Temperature Slider
+            SettingItem(
+                title = "Temperature: ${"%.2f".format(temperature)}",
+                description = "Controls output randomness (0.0 = deterministic, 1.0 = creative)"
+            ) {
+                Slider(
+                    value = temperature,
+                    onValueChange = { viewModel.saveSetting("temperature", it) },
+                    valueRange = 0.0f..1.0f,
+                    modifier = Modifier.fillMaxWidth(0.6f)
+                )
+            }
+
+            // Top-P Slider
+            SettingItem(
+                title = "Top-P: ${"%.2f".format(topP)}",
+                description = "Nucleus sampling probability threshold"
+            ) {
+                Slider(
+                    value = topP,
+                    onValueChange = { viewModel.saveSetting("topP", it) },
+                    valueRange = 0.1f..1.0f,
+                    modifier = Modifier.fillMaxWidth(0.6f)
+                )
+            }
+
+            // Top-K Slider
+            SettingItem(
+                title = "Top-K: ${topK.toInt()}",
+                description = "Limits top token candidate pool"
+            ) {
+                Slider(
+                    value = topK,
+                    onValueChange = { viewModel.saveSetting("topK", it.toInt()) },
+                    valueRange = 1f..100f,
+                    modifier = Modifier.fillMaxWidth(0.6f)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Jalebi Cognitive Loop / Autonomy Settings section
+        Text(
+            text = "Jalebi Cognitive Loop Settings",
+            style = MaterialTheme.typography.titleMedium
+        )
+
+        Column(
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            SettingItem(
+                title = "Max Iterations: ${jalebiMaxIterations.toInt()}",
+                description = "Bounded iteration limit for autonomous loops"
+            ) {
+                Slider(
+                    value = jalebiMaxIterations,
+                    onValueChange = { viewModel.saveSetting("jalebiMaxIterations", it.toInt()) },
+                    valueRange = 1f..20f,
+                    modifier = Modifier.fillMaxWidth(0.6f)
+                )
+            }
+
+            SettingItem(
+                title = "Confidence Threshold: ${"%.2f".format(jalebiConfidenceThreshold)}",
+                description = "Minimum evaluation confidence before completing task"
+            ) {
+                Slider(
+                    value = jalebiConfidenceThreshold,
+                    onValueChange = { viewModel.saveSetting("jalebiConfidenceThreshold", it) },
+                    valueRange = 0.50f..0.99f,
+                    modifier = Modifier.fillMaxWidth(0.6f)
+                )
             }
         }
 
@@ -191,7 +250,7 @@ fun SettingsScreen(
             ) {
                 Switch(
                     checked = enableWakeWord,
-                    onCheckedChange = { enableWakeWord = it }
+                    onCheckedChange = { viewModel.saveSetting("wakeWordEnabled", it) }
                 )
             }
 
@@ -202,7 +261,33 @@ fun SettingsScreen(
             ) {
                 Switch(
                     checked = enableMicrophone,
-                    onCheckedChange = { enableMicrophone = it }
+                    onCheckedChange = { viewModel.saveSetting("microphoneEnabled", it) }
+                )
+            }
+
+            // Speech Speed
+            SettingItem(
+                title = "Speech Speed: ${"%.1f".format(speechSpeed)}x",
+                description = "Playback rate for text-to-speech engine"
+            ) {
+                Slider(
+                    value = speechSpeed,
+                    onValueChange = { viewModel.saveSetting("speechSpeed", it) },
+                    valueRange = 0.5f..2.0f,
+                    modifier = Modifier.fillMaxWidth(0.6f)
+                )
+            }
+
+            // Speech Pitch
+            SettingItem(
+                title = "Speech Pitch: ${"%.1f".format(speechPitch)}x",
+                description = "Voice tone pitch for synthesis"
+            ) {
+                Slider(
+                    value = speechPitch,
+                    onValueChange = { viewModel.saveSetting("speechPitch", it) },
+                    valueRange = 0.5f..1.5f,
+                    modifier = Modifier.fillMaxWidth(0.6f)
                 )
             }
         }
@@ -225,7 +310,7 @@ fun SettingsScreen(
             ) {
                 Switch(
                     checked = enableCamera,
-                    onCheckedChange = { enableCamera = it }
+                    onCheckedChange = { viewModel.saveSetting("cameraEnabled", it) }
                 )
             }
 
@@ -236,7 +321,7 @@ fun SettingsScreen(
             ) {
                 Switch(
                     checked = enableObjectDetection,
-                    onCheckedChange = { enableObjectDetection = it }
+                    onCheckedChange = { viewModel.saveSetting("objectDetectionEnabled", it) }
                 )
             }
 
@@ -247,7 +332,63 @@ fun SettingsScreen(
             ) {
                 Switch(
                     checked = enableOCR,
-                    onCheckedChange = { enableOCR = it }
+                    onCheckedChange = { viewModel.saveSetting("ocrEnabled", it) }
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Appearance & Accessibility section
+        Text(
+            text = "Appearance & Accessibility",
+            style = MaterialTheme.typography.titleMedium
+        )
+
+        Column(
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            SettingItem(
+                title = "Theme Mode ($themeMode)",
+                description = "Choose app color theme"
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    listOf("Dark", "Light", "System").forEach { mode ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.selectable(
+                                selected = (themeMode == mode),
+                                onClick = { viewModel.saveSetting("themeMode", mode) },
+                                role = Role.RadioButton
+                            )
+                        ) {
+                            RadioButton(
+                                selected = (themeMode == mode),
+                                onClick = null
+                            )
+                            Text(mode)
+                        }
+                    }
+                }
+            }
+
+            SettingItem(
+                title = "High Contrast Mode",
+                description = "Increase contrast ratio for UI elements"
+            ) {
+                Switch(
+                    checked = enableHighContrast,
+                    onCheckedChange = { viewModel.saveSetting("highContrastEnabled", it) }
+                )
+            }
+
+            SettingItem(
+                title = "Reduced Motion",
+                description = "Minimize scale and dynamic animations"
+            ) {
+                Switch(
+                    checked = enableReducedMotion,
+                    onCheckedChange = { viewModel.saveSetting("reducedMotionEnabled", it) }
                 )
             }
         }
@@ -270,13 +411,13 @@ fun SettingsScreen(
             ) {
                 Switch(
                     checked = enableMemory,
-                    onCheckedChange = { enableMemory = it }
+                    onCheckedChange = { viewModel.saveSetting("memoryEnabled", it) }
                 )
             }
 
             // Memory retention
             SettingItem(
-                title = "Memory Retention ($retentionPeriod)",
+                title = "Memory Retention ($retentionPeriodDays days)",
                 description = "Set how long to keep memories"
             ) {
                 Button(onClick = { showRetentionDialog = true }) {
@@ -303,7 +444,7 @@ fun SettingsScreen(
             ) {
                 Switch(
                     checked = enableNetwork,
-                    onCheckedChange = { enableNetwork = it }
+                    onCheckedChange = { viewModel.saveSetting("networkEnabled", it) }
                 )
             }
         }
@@ -352,10 +493,10 @@ fun SettingsScreen(
                 title = { Text("Select Default Model") },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf("Qwen3 0.6B Q4", "Qwen3 1.7B Q4", "Qwen3 4B Q4", "Whisper Base", "YOLO Nano").forEach { model ->
+                        listOf("qwen3-0.6b-q4", "qwen3-1.7b-q4", "qwen3-4b-q4", "whisper-base", "yolo-nano").forEach { model ->
                             Button(
                                 onClick = {
-                                    selectedModel = model
+                                    viewModel.saveSetting("defaultModel", model)
                                     showModelDialog = false
                                 },
                                 modifier = Modifier.fillMaxWidth()
@@ -380,15 +521,15 @@ fun SettingsScreen(
                 title = { Text("Memory Retention") },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf("7 Days", "30 Days", "1 Year", "Indefinite").forEach { option ->
+                        mapOf("7 Days" to 7, "30 Days" to 30, "1 Year" to 365, "Indefinite" to 3650).forEach { (label, days) ->
                             Button(
                                 onClick = {
-                                    retentionPeriod = option
+                                    viewModel.saveSetting("memoryRetentionDays", days)
                                     showRetentionDialog = false
                                 },
                                 modifier = Modifier.fillMaxWidth()
                             ) {
-                                Text(option)
+                                Text(label)
                             }
                         }
                     }
@@ -420,6 +561,7 @@ fun SettingItem(
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Column(
+            modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Text(

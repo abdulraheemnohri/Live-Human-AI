@@ -46,7 +46,7 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
         composable(Screen.Knowledge.route) { KnowledgeScreen(onNavigateBack = { navController.popBackStack() }) }
         composable(Screen.Privacy.route) { PrivacyScreen() }
         composable(Screen.Security.route) { SecurityScreen(onNavigateBack = { navController.popBackStack() }) }
-        composable(Screen.Settings.route) { SettingsScreen { navController.popBackStack() } }
+        composable(Screen.Settings.route) { SettingsScreen(onBack = { navController.popBackStack() }) }
         composable(Screen.Diagnostics.route) { DiagnosticsScreen() }
         composable(Screen.Developer.route) { DeveloperScreen(onNavigateBack = { navController.popBackStack() }) }
         composable(Screen.About.route) { AboutScreen(onNavigateBack = { navController.popBackStack() }) }
