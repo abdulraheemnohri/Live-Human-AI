@@ -4,12 +4,30 @@ package com.livehumanai.livehumanai.nativebridge
 class NativeBridge {
     companion object {
         private var instance: NativeBridge? = null
-        @JvmStatic fun getInstance(): NativeBridge = instance ?: NativeBridge().also { instance = it }
-        init { try { System.loadLibrary("native-core") } catch (_: UnsatisfiedLinkError) {} }
+        private var nativeLibraryLoaded: Boolean = false
+
+        @JvmStatic
+        fun getInstance(): NativeBridge = instance ?: NativeBridge().also { instance = it }
+
+        init {
+            nativeLibraryLoaded = runCatching {
+                System.loadLibrary("native-core")
+                true
+            }.getOrDefault(false)
+        }
     }
+
     private var nativeHandle: Long = 0
     val isInitialized: Boolean get() = nativeHandle != 0L
-    fun initialize(): Boolean { if (nativeHandle != 0L) return true; nativeHandle = nativeInitialize(); return nativeHandle != 0L }
+
+    /** Initializes the optional native runtime without taking down the Android process. */
+    fun initialize(): Boolean {
+        if (nativeHandle != 0L) return true
+        if (!nativeLibraryLoaded) return false
+
+        nativeHandle = runCatching { nativeInitialize() }.getOrDefault(0L)
+        return nativeHandle != 0L
+    }
     fun shutdown() { if (nativeHandle != 0L) { nativeShutdown(nativeHandle); nativeHandle = 0L } }
     fun getVersion(): String = nativeGetVersion(nativeHandle)
     fun getRuntimeStatus(): String = nativeGetRuntimeStatus(nativeHandle)
