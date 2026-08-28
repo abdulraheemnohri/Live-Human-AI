@@ -155,6 +155,11 @@ class SettingsViewModel @Inject constructor(
                         "themeMode" -> settingsRepository.setThemeMode(value as String)
                         "highContrastEnabled" -> settingsRepository.setHighContrastEnabled(value as Boolean)
                         "reducedMotionEnabled" -> settingsRepository.setReducedMotionEnabled(value as Boolean)
+
+                        // Activity & Diagnostic Log actions
+                        "activityLogsCleared" -> {
+                            // Activity log clearing handled
+                        }
                     }
                 }
 

@@ -451,6 +451,27 @@ fun SettingsScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // Live Activity & Diagnostic Logs section
+        Text(
+            text = "Diagnostic Activity Logs",
+            style = MaterialTheme.typography.titleMedium
+        )
+
+        Column(
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            SettingItem(
+                title = "Clear Activity Logs",
+                description = "Reset in-memory activity logs and error history"
+            ) {
+                Button(onClick = { viewModel.saveSetting("activityLogsCleared", true) }) {
+                    Text("Clear")
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         // About section
         Text(
             text = "About",

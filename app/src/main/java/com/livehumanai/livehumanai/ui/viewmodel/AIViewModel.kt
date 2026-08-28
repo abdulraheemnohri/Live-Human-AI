@@ -40,10 +40,43 @@ class AIViewModel @Inject constructor(
     private val _jclTelemetry = MutableStateFlow(JalebiTelemetry())
     val jclTelemetry: StateFlow<JalebiTelemetry> = _jclTelemetry.asStateFlow()
 
+    // Real-time activity and error tracking
+    private val _currentActivity = MutableStateFlow("AI Ready & Idle")
+    val currentActivity: StateFlow<String> = _currentActivity.asStateFlow()
+
+    private val _activityLogs = MutableStateFlow<List<ActivityLog>>(emptyList())
+    val activityLogs: StateFlow<List<ActivityLog>> = _activityLogs.asStateFlow()
+
+    private val _lastError = MutableStateFlow<String?>(null)
+    val lastError: StateFlow<String?> = _lastError.asStateFlow()
+
     init {
-        if (!aiRepository.initialize()) _aiState.value = AIState.Error("Failed to initialize AI runtime")
+        if (!aiRepository.initialize()) {
+            _aiState.value = AIState.Error("Failed to initialize AI runtime")
+            logError("Initialization Error: Failed to start C++ native AI engine")
+        } else {
+            logActivity("Native C++ AI engine initialized successfully")
+        }
         viewModelScope.launch { settingsRepository.initializeDefaultSettings() }
         startPerformanceMonitoring()
+    }
+
+    fun logActivity(message: String) {
+        _currentActivity.value = message
+        val newLog = ActivityLog(timestamp = System.currentTimeMillis(), message = message, isError = false)
+        _activityLogs.value = (_activityLogs.value + newLog).takeLast(100)
+    }
+
+    fun logError(errorMessage: String) {
+        _lastError.value = errorMessage
+        _currentActivity.value = "Error: $errorMessage"
+        val newLog = ActivityLog(timestamp = System.currentTimeMillis(), message = errorMessage, isError = true)
+        _activityLogs.value = (_activityLogs.value + newLog).takeLast(100)
+    }
+
+    fun clearLastError() {
+        _lastError.value = null
+        _currentActivity.value = "AI Ready & Idle"
     }
 
     override fun onCleared() {
@@ -55,24 +88,35 @@ class AIViewModel @Inject constructor(
     fun generateResponse(prompt: String, conversationId: Long? = null, modelName: String = "") {
         viewModelScope.launch {
             try {
+                logActivity("Processing prompt: \"${prompt.take(30)}...\"")
                 _aiState.value = AIState.Thinking
                 val response = aiRepository.generate(prompt, modelName, settingsRepository.getTemperature(), settingsRepository.getMaxTokens())
                 conversationId?.let { conversationRepository.addMessageToConversation(it, response, false) }
                 _aiState.value = AIState.Response(response)
+                logActivity("Response generated successfully (${response.length} chars)")
             } catch (e: Exception) {
-                _aiState.value = AIState.Error(e.message ?: "Unknown error")
+                val errorMsg = e.message ?: "Unknown generation error"
+                _aiState.value = AIState.Error(errorMsg)
+                logError("Generation Failed: $errorMsg")
             }
         }
     }
 
-    fun stopGeneration() { aiRepository.stopGeneration(); _aiState.value = AIState.Idle }
+    fun stopGeneration() {
+        aiRepository.stopGeneration()
+        _aiState.value = AIState.Idle
+        logActivity("Generation stopped by user")
+    }
 
     fun startJalebiLoop(goal: String, maxIterations: Int = 8): Boolean {
+        logActivity("Starting Jalebi Cognitive Loop: \"$goal\"")
         val id = jalebiLiveController.start(goal, maxIterations) ?: run {
             _jclTelemetry.value = _jclTelemetry.value.copy(state = "FAILED")
+            logError("Failed to start Jalebi Cognitive Loop for goal: $goal")
             return false
         }
         refreshJalebiLoop(id, goal)
+        logActivity("Jalebi Loop #$id active")
         return true
     }
 
@@ -170,5 +214,11 @@ class AIViewModel @Inject constructor(
         val batteryLevel: Float = 0f,
         val totalRAM: Long = 0,
         val availableRAM: Long = 0
+    )
+
+    data class ActivityLog(
+        val timestamp: Long,
+        val message: String,
+        val isError: Boolean
     )
 }
