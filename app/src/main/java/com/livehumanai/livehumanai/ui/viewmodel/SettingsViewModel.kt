@@ -51,7 +51,13 @@ class SettingsViewModel @Inject constructor(
                 settingsMap["performanceMode"] = settingsRepository.getPerformanceMode()
                 settingsMap["temperature"] = settingsRepository.getTemperature()
                 settingsMap["topP"] = settingsRepository.getTopP()
+                settingsMap["topK"] = settingsRepository.getTopK()
                 settingsMap["maxTokens"] = settingsRepository.getMaxTokens()
+
+                // Jalebi Loop / Autonomy Settings
+                settingsMap["jalebiMaxIterations"] = settingsRepository.getJalebiMaxIterations()
+                settingsMap["jalebiTokenBudget"] = settingsRepository.getJalebiTokenBudget()
+                settingsMap["jalebiConfidenceThreshold"] = settingsRepository.getJalebiConfidenceThreshold()
 
                 // Voice Settings
                 settingsMap["wakeWordEnabled"] = settingsRepository.isWakeWordEnabled()
@@ -77,6 +83,11 @@ class SettingsViewModel @Inject constructor(
 
                 // Privacy Settings
                 settingsMap["analyticsEnabled"] = settingsRepository.isAnalyticsEnabled()
+
+                // Appearance & Accessibility Settings
+                settingsMap["themeMode"] = settingsRepository.getThemeMode()
+                settingsMap["highContrastEnabled"] = settingsRepository.isHighContrastEnabled()
+                settingsMap["reducedMotionEnabled"] = settingsRepository.isReducedMotionEnabled()
 
                 _settings.value = settingsMap
             } catch (e: Exception) {
@@ -107,7 +118,13 @@ class SettingsViewModel @Inject constructor(
                         }
                         "temperature" -> settingsRepository.setTemperature((value as Number).toFloat())
                         "topP" -> settingsRepository.setTopP((value as Number).toFloat())
+                        "topK" -> settingsRepository.setTopK((value as Number).toInt())
                         "maxTokens" -> settingsRepository.setMaxTokens((value as Number).toInt())
+
+                        // Jalebi Loop / Autonomy Settings
+                        "jalebiMaxIterations" -> settingsRepository.setJalebiMaxIterations((value as Number).toInt())
+                        "jalebiTokenBudget" -> settingsRepository.setJalebiTokenBudget((value as Number).toInt())
+                        "jalebiConfidenceThreshold" -> settingsRepository.setJalebiConfidenceThreshold((value as Number).toFloat())
 
                         // Voice Settings
                         "wakeWordEnabled" -> settingsRepository.setWakeWordEnabled(value as Boolean)
@@ -133,6 +150,11 @@ class SettingsViewModel @Inject constructor(
 
                         // Privacy Settings
                         "analyticsEnabled" -> settingsRepository.setAnalyticsEnabled(value as Boolean)
+
+                        // Appearance & Accessibility Settings
+                        "themeMode" -> settingsRepository.setThemeMode(value as String)
+                        "highContrastEnabled" -> settingsRepository.setHighContrastEnabled(value as Boolean)
+                        "reducedMotionEnabled" -> settingsRepository.setReducedMotionEnabled(value as Boolean)
                     }
                 }
 
