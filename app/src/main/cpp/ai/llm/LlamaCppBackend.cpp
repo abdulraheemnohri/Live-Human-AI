@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <cstdint>
 #include <fstream>
 #include <mutex>
 #include <string>
@@ -141,10 +142,8 @@ public:
 
         std::string response;
         response.reserve(static_cast<std::size_t>(maxTokens) * 4);
-        int position = 0;
         for (int generated = 0; generated < maxTokens && !m_stop.load(); ++generated) {
             if (llama_decode(context, batch) != 0) break;
-            position += static_cast<int>(batch.n_tokens);
 
             const llama_token nextToken = llama_sampler_sample(sampler, context, -1);
             if (llama_vocab_is_eog(vocab, nextToken)) break;
