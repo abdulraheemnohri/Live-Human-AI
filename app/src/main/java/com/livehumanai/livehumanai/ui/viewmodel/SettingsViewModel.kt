@@ -89,6 +89,12 @@ class SettingsViewModel @Inject constructor(
                 settingsMap["highContrastEnabled"] = settingsRepository.isHighContrastEnabled()
                 settingsMap["reducedMotionEnabled"] = settingsRepository.isReducedMotionEnabled()
 
+                // Experimental Feature Settings
+                settingsMap["expLiveVisionEnabled"] = settingsRepository.isExperimentalLiveVisionEnabled()
+                settingsMap["expMultiModelResidencyEnabled"] = settingsRepository.isExperimentalMultiModelResidencyEnabled()
+                settingsMap["expSpeculativeDecodingEnabled"] = settingsRepository.isExperimentalSpeculativeDecodingEnabled()
+                settingsMap["expVulkanGpuEnabled"] = settingsRepository.isExperimentalVulkanGpuEnabled()
+
                 _settings.value = settingsMap
             } catch (e: Exception) {
                 // Handle error
@@ -155,6 +161,17 @@ class SettingsViewModel @Inject constructor(
                         "themeMode" -> settingsRepository.setThemeMode(value as String)
                         "highContrastEnabled" -> settingsRepository.setHighContrastEnabled(value as Boolean)
                         "reducedMotionEnabled" -> settingsRepository.setReducedMotionEnabled(value as Boolean)
+
+                        // Experimental Feature Settings
+                        "expLiveVisionEnabled" -> settingsRepository.setExperimentalLiveVisionEnabled(value as Boolean)
+                        "expMultiModelResidencyEnabled" -> settingsRepository.setExperimentalMultiModelResidencyEnabled(value as Boolean)
+                        "expSpeculativeDecodingEnabled" -> settingsRepository.setExperimentalSpeculativeDecodingEnabled(value as Boolean)
+                        "expVulkanGpuEnabled" -> settingsRepository.setExperimentalVulkanGpuEnabled(value as Boolean)
+
+                        // Activity & Diagnostic Log actions
+                        "activityLogsCleared" -> {
+                            // Activity log clearing handled
+                        }
                     }
                 }
 

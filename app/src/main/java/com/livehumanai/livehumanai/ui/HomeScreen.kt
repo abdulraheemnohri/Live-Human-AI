@@ -10,17 +10,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.livehumanai.livehumanai.ui.components.AiOrb
 import com.livehumanai.livehumanai.ui.components.AiOrbState
 import com.livehumanai.livehumanai.ui.theme.LiveHumanAITheme
+import com.livehumanai.livehumanai.ui.viewmodel.AIViewModel
 
 @Composable
 fun HomeScreen(
     onNavigateToChat: () -> Unit = {},
     onNavigateToCamera: () -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
-    onNavigateToJalebi: () -> Unit = {}
+    onNavigateToJalebi: () -> Unit = {},
+    aiViewModel: AIViewModel = hiltViewModel()
 ) {
+    val currentActivity by aiViewModel.currentActivity.collectAsState()
+    val lastError by aiViewModel.lastError.collectAsState()
     var runtimeStatus by remember { mutableStateOf("Ready") }
     var deviceProfile by remember { mutableStateOf("Balanced") }
     var promptInput by remember { mutableStateOf("") }
@@ -84,14 +89,38 @@ fun HomeScreen(
             }
         }
 
-        // Today's AI Summary Card
-        Card(modifier = Modifier.fillMaxWidth()) {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Today's AI Console", style = MaterialTheme.typography.titleMedium)
-                Text("Status: $runtimeStatus • Profile: $deviceProfile", style = MaterialTheme.typography.bodyMedium)
-                Text("Offline Mode ✓", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-                Button(onClick = onNavigateToJalebi, modifier = Modifier.fillMaxWidth()) {
-                    Text("Jalebi Cognitive Loop Console")
+        // Live Activity & Error Status Banner
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            lastError?.let { errorMsg ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("AI Error Detected", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onErrorContainer)
+                            Text(errorMsg, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onErrorContainer)
+                        }
+                        IconButton(onClick = { aiViewModel.clearLastError() }) {
+                            Icon(Icons.Default.Close, contentDescription = "Dismiss Error", tint = MaterialTheme.colorScheme.onErrorContainer)
+                        }
+                    }
+                }
+            }
+
+            // Today's AI Summary Card
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Live AI Activity", style = MaterialTheme.typography.titleMedium)
+                    Text("Current: $currentActivity", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
+                    Text("Status: $runtimeStatus • Profile: $deviceProfile", style = MaterialTheme.typography.bodySmall)
+                    Button(onClick = onNavigateToJalebi, modifier = Modifier.fillMaxWidth()) {
+                        Text("Jalebi Cognitive Loop Console")
+                    }
                 }
             }
         }

@@ -81,6 +81,12 @@ fun SettingsScreen(
     val enableHighContrast = (settingsState["highContrastEnabled"] as? Boolean) ?: false
     val enableReducedMotion = (settingsState["reducedMotionEnabled"] as? Boolean) ?: false
 
+    // Experimental Features state from ViewModel
+    val expLiveVision = (settingsState["expLiveVisionEnabled"] as? Boolean) ?: false
+    val expMultiModelResidency = (settingsState["expMultiModelResidencyEnabled"] as? Boolean) ?: false
+    val expSpeculativeDecoding = (settingsState["expSpeculativeDecodingEnabled"] as? Boolean) ?: false
+    val expVulkanGpu = (settingsState["expVulkanGpuEnabled"] as? Boolean) ?: false
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -192,6 +198,59 @@ fun SettingsScreen(
                     onValueChange = { viewModel.saveSetting("topK", it.toInt()) },
                     valueRange = 1f..100f,
                     modifier = Modifier.fillMaxWidth(0.6f)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Experimental Features & Runtimes section
+        Text(
+            text = "Experimental Features & Runtimes",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.tertiary
+        )
+
+        Column(
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            SettingItem(
+                title = "Experimental Live Vision Pipeline",
+                description = "Real-time zero-copy CameraX frame analysis in JCL"
+            ) {
+                Switch(
+                    checked = expLiveVision,
+                    onCheckedChange = { viewModel.saveSetting("expLiveVisionEnabled", it) }
+                )
+            }
+
+            SettingItem(
+                title = "Multi-Model Memory Residency",
+                description = "Keep LLM and Vision models co-resident on high-RAM devices"
+            ) {
+                Switch(
+                    checked = expMultiModelResidency,
+                    onCheckedChange = { viewModel.saveSetting("expMultiModelResidencyEnabled", it) }
+                )
+            }
+
+            SettingItem(
+                title = "Speculative Draft Decoding",
+                description = "Accelerate target LLM generation using a smaller draft model"
+            ) {
+                Switch(
+                    checked = expSpeculativeDecoding,
+                    onCheckedChange = { viewModel.saveSetting("expSpeculativeDecodingEnabled", it) }
+                )
+            }
+
+            SettingItem(
+                title = "Experimental Vulkan GPU Backend",
+                description = "Enable hardware Vulkan acceleration for supported GGUF shaders"
+            ) {
+                Switch(
+                    checked = expVulkanGpu,
+                    onCheckedChange = { viewModel.saveSetting("expVulkanGpuEnabled", it) }
                 )
             }
         }
@@ -446,6 +505,27 @@ fun SettingsScreen(
                     checked = enableNetwork,
                     onCheckedChange = { viewModel.saveSetting("networkEnabled", it) }
                 )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Live Activity & Diagnostic Logs section
+        Text(
+            text = "Diagnostic Activity Logs",
+            style = MaterialTheme.typography.titleMedium
+        )
+
+        Column(
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            SettingItem(
+                title = "Clear Activity Logs",
+                description = "Reset in-memory activity logs and error history"
+            ) {
+                Button(onClick = { viewModel.saveSetting("activityLogsCleared", true) }) {
+                    Text("Clear")
+                }
             }
         }
 
