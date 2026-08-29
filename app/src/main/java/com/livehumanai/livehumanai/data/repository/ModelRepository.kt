@@ -2,6 +2,8 @@ package com.livehumanai.livehumanai.data.repository
 
 import com.livehumanai.livehumanai.data.database.dao.ModelDao
 import com.livehumanai.livehumanai.data.database.entity.ModelEntity
+import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 
 /**
@@ -12,37 +14,58 @@ import java.io.File
 
 class ModelRepository @Inject constructor(
     private val modelDao: ModelDao,
-    private val hfDownloader: HuggingFaceDownloader
+    private val hfDownloader: HuggingFaceDownloader,
+    @ApplicationContext private val appContext: Context
 ) {
 
     suspend fun downloadHuggingFaceModel(
         repoId: String,
         filename: String,
         targetFile: File,
-        onProgress: (Long, Long, Float) -> Unit
+        onProgress: (Long, Long, Float) -> Unit,
+        revision: String = "main"
     ): Boolean {
-        val success = hfDownloader.downloadModel(repoId, filename, targetFile, onProgress)
-        if (success) {
-            val modelName = filename.substringBeforeLast(".")
-            modelDao.insertModel(
-                ModelEntity(
-                    name = modelName,
-                    version = "1.0",
-                    type = if (filename.endsWith(".onnx")) ModelEntity.ModelType.VISION else ModelEntity.ModelType.LLM,
-                    size = targetFile.length(),
-                    format = filename.substringAfterLast(".").uppercase(),
-                    quantization = if (filename.contains("q4", true)) "Q4" else "FP16",
-                    ramRequirement = 1000000000,
-                    license = "Apache 2.0",
-                    source = repoId,
-                    checksum = "hf_${filename.hashCode()}",
-                    isInstalled = true
-                )
-            )
-        }
-        return success
-    }
+        val success = hfDownloader.downloadModel(repoId, filename, targetFile, onProgress, revision)
+        if (!success) return false
 
+        val modelName = filename.substringBeforeLast(".")
+        val type = when {
+            filename.endsWith(".onnx", ignoreCase = true) -> ModelEntity.ModelType.VISION
+            filename.contains("whisper", ignoreCase = true) -> ModelEntity.ModelType.STT
+            else -> ModelEntity.ModelType.LLM
+        }
+        modelDao.insertModel(
+            ModelEntity(
+                name = modelName,
+                version = revision,
+                type = type,
+                size = targetFile.length(),
+                format = filename.substringAfterLast(".").uppercase(),
+                quantization = if (filename.contains("q4", true)) "Q4" else "FP16",
+                ramRequirement = (targetFile.length() * 2).coerceAtLeast(512L * 1024L * 1024L),
+                supportsAudio = type == ModelEntity.ModelType.STT,
+                license = "Unknown - verify model license",
+                source = repoId,
+                checksum = sha256(targetFile),
+                isInstalled = true,
+                installedAt = java.util.Date(),
+                downloadUrl = "https://huggingface.co/$repoId/resolve/$revision/$filename"
+            )
+        )
+        return true
+    }
+    private fun sha256(file: File): String {
+        val digest = java.security.MessageDigest.getInstance("SHA-256")
+        file.inputStream().use { input ->
+            val buffer = ByteArray(1024 * 64)
+            while (true) {
+                val read = input.read(buffer)
+                if (read == -1) break
+                digest.update(buffer, 0, read)
+            }
+        }
+        return digest.digest().joinToString("") { "%02x".format(it) }
+    }
     suspend fun addModel(model: ModelEntity) {
         modelDao.insertModel(model)
     }
@@ -52,6 +75,12 @@ class ModelRepository @Inject constructor(
     }
 
     suspend fun deleteModel(name: String) {
+        val model = modelDao.getModelByName(name)
+        model?.let {
+            val extension = it.format.lowercase()
+            File(appContext.filesDir, "$name.$extension").delete()
+            File(appContext.filesDir, "$name.$extension.part").delete()
+        }
         modelDao.deleteModel(name)
     }
 
