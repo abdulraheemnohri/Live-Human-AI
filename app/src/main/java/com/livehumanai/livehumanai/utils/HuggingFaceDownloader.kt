@@ -17,76 +17,80 @@ class HuggingFaceDownloader @Inject constructor() {
         repoId: String,
         filename: String,
         targetFile: File,
-        onProgress: (bytesDownloaded: Long, totalBytes: Long, progressPercent: Float) -> Unit
+        onProgress: (bytesDownloaded: Long, totalBytes: Long, progressPercent: Float) -> Unit,
+        revision: String = "main"
     ): Boolean = withContext(Dispatchers.IO) {
         var connection: HttpURLConnection? = null
         var inputStream: InputStream? = null
         var outputStream: FileOutputStream? = null
+        val parent = targetFile.parentFile ?: return@withContext false
+        val partialFile = File(parent, "${targetFile.name}.part")
 
         try {
-            var currentUrl = "https://huggingface.co/$repoId/resolve/main/$filename"
+            parent.mkdirs()
+            partialFile.delete()
+            var currentUrl = "https://huggingface.co/$repoId/resolve/$revision/$filename"
             var redirects = 0
-            val maxRedirects = 5
 
-            while (redirects < maxRedirects) {
-                val url = URL(currentUrl)
-                connection = url.openConnection() as HttpURLConnection
-                connection.instanceFollowRedirects = true
+            while (redirects <= 5) {
+                connection = URL(currentUrl).openConnection() as HttpURLConnection
+                connection.instanceFollowRedirects = false
                 connection.requestMethod = "GET"
                 connection.connectTimeout = 15000
                 connection.readTimeout = 30000
 
-                val responseCode = connection.responseCode
-                if (responseCode == HttpURLConnection.HTTP_MOVED_PERM ||
-                    responseCode == HttpURLConnection.HTTP_MOVED_TEMP ||
-                    responseCode == HttpURLConnection.HTTP_SEE_OTHER ||
-                    responseCode == 307 || responseCode == 308) {
-                    val newUrl = connection.getHeaderField("Location")
-                    connection.disconnect()
-                    if (newUrl.isNull_or_blank()) break
-                    currentUrl = newUrl
-                    redirects++
-                } else if (responseCode == HttpURLConnection.HTTP_OK) {
-                    break
-                } else {
-                    connection.disconnect()
-                    return@withContext false
+                when (val responseCode = connection.responseCode) {
+                    HttpURLConnection.HTTP_OK -> break
+                    HttpURLConnection.HTTP_MOVED_PERM,
+                    HttpURLConnection.HTTP_MOVED_TEMP,
+                    HttpURLConnection.HTTP_SEE_OTHER,
+                    307,
+                    308 -> {
+                        val location = connection.getHeaderField("Location")
+                        connection.disconnect()
+                        if (location.isNullOrBlank()) return@withContext false
+                        currentUrl = URL(URL(currentUrl), location).toString()
+                        redirects++
+                    }
+                    else -> {
+                        connection.disconnect()
+                        return@withContext false
+                    }
                 }
             }
 
-            if (connection?.responseCode != HttpURLConnection.HTTP_OK) {
-                connection?.disconnect()
-                return@withContext false
-            }
+            if (connection?.responseCode != HttpURLConnection.HTTP_OK) return@withContext false
+            val totalBytes = connection?.contentLengthLong ?: -1L
+            inputStream = connection?.inputStream ?: return@withContext false
+            outputStream = FileOutputStream(partialFile)
+            val buffer = ByteArray(1024 * 64)
+            var downloaded = 0L
 
-            val totalBytes = connection.contentLengthLong
-            inputStream = connection.inputStream
-            outputStream = FileOutputStream(targetFile)
-
-            val buffer = ByteArray(8192)
-            var bytesRead: Int
-            var totalBytesDownloaded = 0L
-
-            while (inputStream.read(buffer).also { bytesRead = it } != -1) {
+            while (true) {
+                val bytesRead = inputStream.read(buffer)
+                if (bytesRead == -1) break
                 outputStream.write(buffer, 0, bytesRead)
-                totalBytesDownloaded += bytesRead
-                val progress = if (totalBytes > 0) (totalBytesDownloaded.toFloat() / totalBytes) else 0f
-                onProgress(totalBytesDownloaded, totalBytes, progress)
+                downloaded += bytesRead
+                val progress = if (totalBytes > 0) downloaded.toFloat() / totalBytes else 0f
+                onProgress(downloaded, totalBytes, progress.coerceIn(0f, 1f))
             }
-
             outputStream.flush()
-            true
-        } catch (e: Exception) {
-            if (targetFile.exists()) {
-                targetFile.delete()
+            if (totalBytes > 0 && downloaded != totalBytes) return@withContext false
+
+            if (targetFile.exists() && !targetFile.delete()) return@withContext false
+            if (!partialFile.renameTo(targetFile)) {
+                partialFile.copyTo(targetFile, overwrite = true)
+                partialFile.delete()
             }
+            onProgress(downloaded, downloaded, 1f)
+            true
+        } catch (_: Exception) {
             false
         } finally {
             outputStream?.close()
             inputStream?.close()
             connection?.disconnect()
+            if (partialFile.exists()) partialFile.delete()
         }
     }
-
-    private fun String?.isNull_or_blank(): Boolean = this == null || this.trim().isEmpty()
 }
