@@ -43,6 +43,11 @@ class ModelViewModel @Inject constructor(
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
+    private val _operationMessage = MutableStateFlow<String?>(null)
+    val operationMessage: StateFlow<String?> = _operationMessage.asStateFlow()
+
+    fun clearOperationMessage() { _operationMessage.value = null }
+
     init {
         loadModels()
         loadInstalledModels()
@@ -109,13 +114,22 @@ class ModelViewModel @Inject constructor(
     fun loadModel(modelName: String) {
         viewModelScope.launch {
             try {
-                if (aiRepository.loadModel(modelName)) {
-                    _loadedModels.value = _loadedModels.value + modelName
-                    modelRepository.setModelLoaded(modelName, true)
-                    updateModelState(modelName) { it.copy(isLoaded = true) }
+                val model = modelRepository.getModelByName(modelName)
+                if (model == null || !model.isInstalled) {
+                    _operationMessage.value = "Cannot load $modelName: the model is not installed"
+                    return@launch
                 }
+                if (aiRepository.loadModel(modelName)) {
+                    _loadedModels.value = (_loadedModels.value + modelName).distinct()
+                    modelRepository.setModelLoaded(modelName, true)
+                    _operationMessage.value = "Loaded $modelName into the native runtime"
+                } else {
+                    _operationMessage.value = "Could not load $modelName: native runtime rejected the model file"
+                }
+                loadModels()
+                loadInstalledModels()
             } catch (e: Exception) {
-                // Handle error
+                _operationMessage.value = "Load failed: ${e.message ?: "unknown error"}"
             }
         }
     }
@@ -126,10 +140,14 @@ class ModelViewModel @Inject constructor(
                 if (aiRepository.unloadModel(modelName)) {
                     _loadedModels.value = _loadedModels.value - modelName
                     modelRepository.setModelLoaded(modelName, false)
-                    updateModelState(modelName) { it.copy(isLoaded = false) }
+                    _operationMessage.value = "Unloaded $modelName from the native runtime"
+                } else {
+                    _operationMessage.value = "Could not unload $modelName"
                 }
+                loadModels()
+                loadInstalledModels()
             } catch (e: Exception) {
-                // Handle error
+                _operationMessage.value = "Unload failed: ${e.message ?: "unknown error"}"
             }
         }
     }
@@ -142,54 +160,39 @@ class ModelViewModel @Inject constructor(
                 val success = modelRepository.downloadHuggingFaceModel(repoId, filename, targetFile) { _, _, progress ->
                     _downloadProgress.value = _downloadProgress.value + (filename to progress)
                 }
-                _downloadProgress.value = _downloadProgress.value - filename
+                _operationMessage.value = if (success) "Downloaded and verified $filename" else "Download failed for $filename"
                 if (success) {
                     loadModels()
                     loadInstalledModels()
                 }
             } catch (e: Exception) {
+                _operationMessage.value = "Download failed: ${e.message ?: "unknown error"}"
+            } finally {
                 _downloadProgress.value = _downloadProgress.value - filename
             }
         }
     }
 
     fun downloadModel(modelName: String) {
-        viewModelScope.launch {
-            try {
-                // Simulate download
-                _downloadProgress.value = _downloadProgress.value + (modelName to 0f)
-
-                // In a real implementation, this would download the model file
-                // and update the progress
-                for (i in 1..10) {
-                    kotlinx.coroutines.delay(500)
-                    _downloadProgress.value = _downloadProgress.value + (modelName to (i * 0.1f))
-                }
-
-                // Mark as installed
-                modelRepository.setModelInstalled(modelName, true)
-                _downloadProgress.value = _downloadProgress.value - modelName
-                loadInstalledModels()
-            } catch (e: Exception) {
-                _downloadProgress.value = _downloadProgress.value - modelName
-                // Handle error
-            }
-        }
+        _operationMessage.value = "No source file is configured for $modelName; use the Hugging Face downloader"
     }
 
     fun deleteModel(modelName: String) {
         viewModelScope.launch {
             try {
+                val model = modelRepository.getModelByName(modelName)
+                if (model?.isLoaded == true) aiRepository.unloadModel(modelName)
                 modelRepository.deleteModel(modelName)
-                modelRepository.setModelInstalled(modelName, false)
-                modelRepository.setModelLoaded(modelName, false)
                 _loadedModels.value = _loadedModels.value - modelName
+                _operationMessage.value = "Deleted $modelName and its local file"
+                loadModels()
                 loadInstalledModels()
             } catch (e: Exception) {
-                // Handle error
+                _operationMessage.value = "Delete failed: ${e.message ?: "unknown error"}"
             }
         }
     }
+
 
     // Settings operations
 
